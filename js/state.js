@@ -16,7 +16,8 @@ const state = {
         aulaName: "",
         aulaAge: "4_anios",
         teacherTitle: "",
-        schoolYear: ""
+        schoolYear: "",
+        groqApiKey: ""
     },
 
     // Routines checklists

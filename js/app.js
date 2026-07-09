@@ -3,6 +3,9 @@
 const SUPABASE_URL = "https://bsrnpneeuqhytzufwmpd.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_wyfJ1cjUJTHjiaHpf9vXKg_HPd1OjiT";
 
+// Configuración de Groq (si colocas aquí tu API Key de Groq, se activará de forma predeterminada para el aula)
+const DEFAULT_GROQ_API_KEY = "";
+
 let supabaseClient = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window.supabase !== "undefined") {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -129,6 +132,8 @@ function initDOMCache() {
         configIeName: document.getElementById("config-ie-name"),
         configAulaName: document.getElementById("config-aula-name"),
         configTeacherTitle: document.getElementById("config-teacher-title"),
+        configGroqKey: document.getElementById("config-groq-key"),
+        btnGenerateAiReport: document.getElementById("btn-generate-ai-report"),
         configTeacherEmail: document.getElementById("config-teacher-email"),
         configTeacherPassword: document.getElementById("config-teacher-password"),
         configSchoolYear: document.getElementById("config-school-year"),
@@ -284,6 +289,7 @@ function bindEvents() {
 
     // AI Session generator button
     $.btnKuskaIa.addEventListener("click", generateLessonWithKuskaIa);
+    if ($.btnGenerateAiReport) $.btnGenerateAiReport.addEventListener("click", generateEvaluationReportWithGroq);
 
     // Add Student
     if ($.btnAddStudent) $.btnAddStudent.addEventListener("click", addStudentFromRubric);
@@ -474,6 +480,13 @@ async function saveCurrentUserSession() {
                 teacher_title: state.config.teacherTitle,
                 school_year: state.config.schoolYear
             });
+            
+            // Sync Groq Key to User Metadata
+            await supabaseClient.auth.updateUser({
+                data: {
+                    groq_api_key: state.config.groqApiKey || ""
+                }
+            });
 
             // 2. Sync Students (Delete first, then insert to preserve list state)
             await supabaseClient.from('students').delete().eq('user_id', userId);
@@ -572,7 +585,8 @@ async function handleLogin(e) {
                 aulaName: profile?.aula_name || "",
                 aulaAge: profile?.aula_age || "4_anios",
                 teacherTitle: profile?.teacher_title || userName,
-                schoolYear: profile?.school_year || ""
+                schoolYear: profile?.school_year || "",
+                groqApiKey: data.user.user_metadata?.groq_api_key || ""
             };
 
             state.evaluation.students = (students || []).map(s => ({
@@ -633,7 +647,7 @@ async function handleLogin(e) {
         name: user.name,
         password: user.password
     };
-    state.config = user.config || { ieName: "", aulaName: "", aulaAge: "4_anios", teacherTitle: user.name, schoolYear: "" };
+    state.config = user.config || { ieName: "", aulaName: "", aulaAge: "4_anios", teacherTitle: user.name, schoolYear: "", groqApiKey: "" };
     state.evaluation.students = user.students || [];
     state.evaluation.rubrics = user.rubrics || {};
     state.savedPlans = user.savedPlans || [];
@@ -706,7 +720,8 @@ async function handleRegister(e) {
                 aulaName: aulaName,
                 aulaAge: aulaAge,
                 teacherTitle: name,
-                schoolYear: schoolYear
+                schoolYear: schoolYear,
+                groqApiKey: ""
             };
             state.evaluation.students = [];
             state.evaluation.rubrics = {};
@@ -739,7 +754,8 @@ async function handleRegister(e) {
             aulaName: aulaName,
             aulaAge: aulaAge,
             teacherTitle: name,
-            schoolYear: schoolYear
+            schoolYear: schoolYear,
+            groqApiKey: ""
         },
         students: [],
         rubrics: {},
@@ -1623,9 +1639,12 @@ function renderDidacticSteps() {
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
 
-// Enhancer IA trigger (manual)
-function generateLessonWithKuskaIa() {
+
+
+async function generateLessonWithKuskaIa() {
     const area = state.session.selectedArea;
+    const comp = state.session.selectedCompetence;
+    
     if (!area) {
         showToast("Selecciona un Área Curricular primero.", "warning");
         return;
@@ -1638,21 +1657,55 @@ function generateLessonWithKuskaIa() {
     $.btnKuskaIa.classList.add("loading");
     const label = $.btnKuskaIa.querySelector("span");
     const originalText = label.textContent;
-    label.textContent = "Kuska IA enriqueciendo textos...";
+    label.textContent = "Llama-3.3 pensando...";
 
-    setTimeout(() => {
-        const aiData = AI_GENERATOR_DATABASE[area] || AI_GENERATOR_DATABASE["personal_social"];
-        state.session.didacticSteps.forEach((step, idx) => {
-            const templateText = aiData.steps[idx] || aiData.steps[aiData.steps.length - 1];
-            const cleanSituation = state.significantSituation.split(':')[0] || "nuestro proyecto";
-            step.content = "✦ [ENRIQUECIDO POR IA]: " + templateText.replace("la situación significativa del aula", `el proyecto '${cleanSituation}'`);
-        });
+    try {
+        const systemPrompt = `Eres Kuska IA, una asistente de educación inicial. Genera una secuencia didáctica en español para niños de ${state.selectedAge.replace('_', ' ')} para el área ${area} y competencia ${comp}.
+Debes responder ÚNICAMENTE con un objeto JSON que contenga las siguientes tres propiedades:
+1. "inicio": Qué hace la docente y los estudiantes al inicio de la clase (motivación, saberes previos).
+2. "desarrollo": La actividad principal (manipulación, procesos didácticos del área).
+3. "cierre": Conversación reflexiva final (metacognición).
+No incluyas markdown, saludos ni explicaciones, devuelve solo el JSON puro.`;
+
+        const userPrompt = `Situación Significativa: ${state.significantSituation}
+Capacidades seleccionadas: ${state.session.selectedCapacities.join(", ")}`;
+
+        const responseText = await callGroqAPI(systemPrompt, userPrompt);
+        
+        const jsonStart = responseText.indexOf('{');
+        const jsonEnd = responseText.lastIndexOf('}') + 1;
+        if (jsonStart === -1 || jsonEnd === -1) {
+            throw new Error("Formato inválido.");
+        }
+        const parsed = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+        
+        state.session.didacticSteps = [
+            { name: "Inicio (Procesos Pedagógicos)", desc: "Motivación, recuperación de saberes previos y conflicto cognitivo.", content: parsed.inicio || "" },
+            { name: "Desarrollo (Procesos Didácticos)", desc: "Vivenciación, manipulación, representación y formalización.", content: parsed.desarrollo || "" },
+            { name: "Cierre (Metacognición)", desc: "Recapitulación y evaluación formativa.", content: parsed.cierre || "" }
+        ];
 
         renderDidacticSteps();
+        showToast("¡Texto generado con la IA de Groq!", "success");
+    } catch (err) {
+        if (err.message === "API_KEY_MISSING") {
+            showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
+        } else {
+            console.error(err);
+            showToast("Error de conexión. Usando plantilla local...", "error");
+            // Local Fallback
+            const aiData = AI_GENERATOR_DATABASE[area] || AI_GENERATOR_DATABASE["personal_social"];
+            state.session.didacticSteps.forEach((step, idx) => {
+                const templateText = aiData.steps[idx] || aiData.steps[aiData.steps.length - 1];
+                const cleanSituation = state.significantSituation.split(':')[0] || "nuestro proyecto";
+                step.content = "✦ [LOCAL AI FALLBACK]: " + templateText.replace("la situación significativa del aula", `el proyecto '${cleanSituation}'`);
+            });
+            renderDidacticSteps();
+        }
+    } finally {
         $.btnKuskaIa.classList.remove("loading");
         label.textContent = originalText;
-        showToast("¡Texto enriquecido con Kuska IA!", "success");
-    }, 1200);
+    }
 }
 
 // Inclusion UI Control
@@ -2188,7 +2241,7 @@ function renderCurriculumIdeas(compKey, idea, isAdapted = false) {
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
 
-function generateThematicIdea(compKey, theme) {
+async function generateThematicIdea(compKey, theme) {
     const defaultIdea = CURRICULUM_IDEAS[compKey];
     if (!defaultIdea) return;
 
@@ -2198,19 +2251,51 @@ function generateThematicIdea(compKey, theme) {
         return;
     }
 
-    // Show a quick loading state to make the AI transition feel real and magical
     const container = document.getElementById("curriculum-ideator-panel");
     if (container) {
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 350px; text-align: center;">
                 <div class="spinner" style="width: 48px; height: 48px; border: 4px solid var(--primary-light); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1.5rem;"></div>
                 <h4 style="font-weight: 700; color: var(--lavender-dark); margin-bottom: 0.5rem;">Adaptando al tema "${cleanedTheme}"...</h4>
-                <p class="text-muted" style="font-size: 0.82rem; max-width: 260px;">Kuska IA está combinando las capacidades curriculares con el tema de interés...</p>
+                <p class="text-muted" style="font-size: 0.82rem; max-width: 260px;">Groq Llama-3.3 adaptando dinámicas al tema...</p>
             </div>
         `;
     }
 
-    setTimeout(() => {
+    try {
+        const systemPrompt = `Eres Kuska IA. Adapta la propuesta didáctica de educación inicial provista para incorporarla al tema de interés indicado por el usuario.
+Debes responder ÚNICAMENTE con un objeto JSON válido que contenga exactamente cuatro propiedades:
+1. "title": Título motivador y divertido combinando el concepto y el tema (máximo 8 palabras).
+2. "game": Descripción lúdica del juego o actividad adaptada al tema (entre 60 y 100 palabras).
+3. "questions": Arreglo de exactamente tres preguntas de indagación reflexiva adaptadas al tema.
+4. "materials": Arreglo de exactamente cuatro materiales acordes al tema.
+
+No devuelvas ninguna otra frase, saludo ni formato markdown, devuelve solo el JSON puro.`;
+
+        const userPrompt = `Propuesta Original: ${JSON.stringify(defaultIdea)}
+Tema de adaptación: ${cleanedTheme}`;
+
+        const responseText = await callGroqAPI(systemPrompt, userPrompt);
+        
+        const jsonStart = responseText.indexOf('{');
+        const jsonEnd = responseText.lastIndexOf('}') + 1;
+        if (jsonStart === -1 || jsonEnd === -1) {
+            throw new Error("Formato inválido.");
+        }
+        const parsed = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+        
+        renderCurriculumIdeas(compKey, parsed, true);
+        const inputTheme = document.getElementById("curriculum-theme-input");
+        if (inputTheme) inputTheme.value = cleanedTheme;
+        showToast(`Idea adaptada con éxito al tema "${cleanedTheme}" con Llama 3`, "success");
+    } catch (err) {
+        if (err.message === "API_KEY_MISSING") {
+            showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
+        } else {
+            console.error(err);
+            showToast("Error de conexión. Usando adaptación básica local...", "error");
+        }
+        // Fallback
         const thematicIdea = {
             title: `${defaultIdea.title} de ${cleanedTheme}`,
             game: `Adaptado al tema "${cleanedTheme}": ${defaultIdea.game.replace(/tapitas|objetos|cuentos|cuentitos|dibujos|dibujo|juguetes|juguete|bloques/gi, cleanedTheme.toLowerCase())}`,
@@ -2221,45 +2306,61 @@ function generateThematicIdea(compKey, theme) {
                 `Ilustraciones y láminas de ${cleanedTheme}`
             ]
         };
-
         renderCurriculumIdeas(compKey, thematicIdea, true);
-
-        // Re-insert value to the input field so the user sees their query still there
         const inputTheme = document.getElementById("curriculum-theme-input");
         if (inputTheme) inputTheme.value = cleanedTheme;
-
-        showToast(`Idea adaptada con éxito al tema "${cleanedTheme}"`, "success");
-    }, 600);
+    }
 }
 
-function triggerIaGeneration(compKey) {
+async function triggerIaGeneration(compKey) {
     const container = document.getElementById("curriculum-ideator-panel");
     if (!container) return;
 
-    // Render spinner overlay or loading state
     container.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 350px; text-align: center;">
             <div class="spinner" style="width: 48px; height: 48px; border: 4px solid var(--primary-light); border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1.5rem;"></div>
-            <h4 style="font-weight: 700; color: var(--lavender-dark); margin-bottom: 0.5rem;">Kuska IA está planificando...</h4>
-            <p class="text-muted" style="font-size: 0.82rem; max-width: 260px;">Redactando dinámicas infantiles, preguntas de indagación y materiales recomendados...</p>
+            <h4 style="font-weight: 700; color: var(--lavender-dark); margin-bottom: 0.5rem;">Groq Llama-3.3 planificando...</h4>
+            <p class="text-muted" style="font-size: 0.82rem; max-width: 260px;">Diseñando dinámicas lúdicas, preguntas reflexivas y recursos recomendados...</p>
         </div>
     `;
 
-    // Add CSS spinner animation dynamically if not present
     if (!document.getElementById("spinner-keyframe-style")) {
         const style = document.createElement("style");
         style.id = "spinner-keyframe-style";
-        style.textContent = `
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        `;
+        style.textContent = `@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`;
         document.head.appendChild(style);
     }
 
-    setTimeout(() => {
-        // Choose a random dynamic from PEDAGOGICAL_TEMPLATES or alternate
+    try {
+        const systemPrompt = `Eres Kuska IA, una asistente de educación inicial. Crea una propuesta didáctica original e interactiva para niños de 3 a 5 años basada en la competencia indicada.
+Debes responder ÚNICAMENTE con un objeto JSON válido que contenga exactamente cuatro propiedades:
+1. "title": Título divertido y motivador (máximo 8 palabras).
+2. "game": Descripción lúdica detallada del juego principal (entre 60 y 100 palabras).
+3. "questions": Arreglo de exactamente tres preguntas de indagación reflexiva.
+4. "materials": Arreglo de exactamente cuatro materiales recomendados.
+
+No incluyas explicaciones adicionales, devuelve solo el JSON puro.`;
+
+        const userPrompt = `Competencia Curricular: ${compKey}`;
+        const responseText = await callGroqAPI(systemPrompt, userPrompt);
+        
+        const jsonStart = responseText.indexOf('{');
+        const jsonEnd = responseText.lastIndexOf('}') + 1;
+        if (jsonStart === -1 || jsonEnd === -1) {
+            throw new Error("Formato inválido.");
+        }
+        const parsed = JSON.parse(responseText.substring(jsonStart, jsonEnd));
+        
+        renderCurriculumIdeas(compKey, parsed, false);
+        showToast("¡Nueva propuesta didáctica generada en tiempo real por Groq!", "success");
+    } catch (err) {
+        if (err.message === "API_KEY_MISSING") {
+            showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
+        } else {
+            console.error(err);
+            showToast("Error de conexión. Cargando propuesta predeterminada...", "error");
+        }
+        // Fallback
         const areaMapping = {
             construye_identidad: "personal_social",
             convive_participa: "personal_social",
@@ -2274,14 +2375,11 @@ function triggerIaGeneration(compKey) {
             resuelve_forma: "matematica",
             indaga_metodos: "ciencia_tecnologia"
         };
-
         const areaKey = areaMapping[compKey] || "comunicacion";
         const templates = PEDAGOGICAL_TEMPLATES[areaKey] || PEDAGOGICAL_TEMPLATES.comunicacion;
         const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
-
         renderCurriculumIdeas(compKey, randomTemplate, false);
-        showToast("¡Nueva propuesta didáctica generada!", "success");
-    }, 800);
+    }
 }
 
 function handleCurriculumSearch() {
@@ -2466,6 +2564,7 @@ function renderConfigForm() {
     $.configAulaName.value = state.config.aulaName || "";
     $.configTeacherTitle.value = state.config.teacherTitle || "";
     $.configSchoolYear.value = state.config.schoolYear || "";
+    $.configGroqKey.value = state.config.groqApiKey || "";
     if ($.configAulaAge) {
         $.configAulaAge.value = state.config.aulaAge || "4_anios";
     }
@@ -2526,6 +2625,7 @@ function handleConfigSave(e) {
     state.config.aulaName = $.configAulaName.value.trim();
     state.config.teacherTitle = $.configTeacherTitle.value.trim();
     state.config.schoolYear = $.configSchoolYear.value.trim();
+    state.config.groqApiKey = $.configGroqKey.value.trim();
     if ($.configAulaAge) {
         state.config.aulaAge = $.configAulaAge.value;
         state.selectedAge = state.config.aulaAge;
@@ -3425,4 +3525,116 @@ function renderSituationSuggestions() {
     });
 
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
+}
+
+// --- GROQ API INTEGRATION DRIVER ---
+async function callGroqAPI(systemPrompt, userPrompt) {
+    const apiKey = state.config.groqApiKey || DEFAULT_GROQ_API_KEY || "";
+    if (!apiKey) {
+        throw new Error("API_KEY_MISSING");
+    }
+    
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+            ],
+            temperature: 0.6
+        })
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.choices[0].message.content.trim();
+}
+
+async function generateEvaluationReportWithGroq() {
+    const students = state.evaluation.students;
+    const capacities = state.session.selectedCapacities || [];
+    
+    if (!students || students.length === 0) {
+        showToast("Añade alumnos al aula primero en el módulo de Alumnos.", "warning");
+        return;
+    }
+    if (capacities.length === 0) {
+        showToast("Selecciona un Área y Competencia en el Planificador para activar criterios.", "warning");
+        return;
+    }
+
+    const btn = $.btnGenerateAiReport;
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<div class="spinner" style="width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top:2px solid white; border-radius:50%; animation:spin 1s linear infinite; display:inline-block; margin-right:0.4rem;"></div><span>Generando Informe...</span>`;
+
+    let rosterText = "";
+    students.forEach(st => {
+        rosterText += `Estudiante: ${st.name}\n`;
+        if (st.nee && st.nee.length > 0) {
+            rosterText += `Condiciones de Inclusión (NEE): ${st.nee.join(", ")}\n`;
+        }
+        capacities.forEach(cap => {
+            const grade = getStudentGrade(st.id, cap);
+            rosterText += `- Capacidad [${cap}]: Calificación actual = ${grade}\n`;
+        });
+        rosterText += "\n";
+    });
+
+    try {
+        const systemPrompt = `Eres Kuska IA, una asistente pedagógica y psicopedagógica experta en educación inicial en Perú.
+Analiza la lista de cotejo del aula provista y genera un informe de logros detallado, profesional y enriquecido en formato HTML limpio.
+IMPORTANTE: Devuelve únicamente código HTML limpio que use divs, h3, h4, tables y listas estructuradas con estilos CSS integrados sencillos. No incluyas etiquetas <html>, <head>, <body> ni bloques de scripts. Comienza directamente con el contenido del informe.
+El informe debe contener:
+1. Diagnóstico del Nivel de Logro del Aula (Porcentajes de alumnos en Logrado, Proceso e Inicio).
+2. Fortalezas observadas en el grupo.
+3. Dificultades comunes y aspectos a reforzar.
+4. Recomendaciones pedagógicas específicas de inclusión y adaptaciones curriculares individuales para los niños con condiciones NEE o en nivel 'Inicio'.
+5. Firma pedagógica final de Kuska IA.`;
+
+        const userPrompt = `Datos del aula:
+Docente: ${state.config.teacherTitle || "Docente Kuska"}
+Aula: ${state.config.aulaName || "Aula Inicial"} - Edad: ${state.selectedAge.replace('_', ' ')}
+Colegio: ${state.config.ieName || "Colegio Kuska"}
+
+Registros de calificaciones de la lista de cotejo:
+${rosterText}`;
+
+        const reportHtml = await callGroqAPI(systemPrompt, userPrompt);
+        
+        $.modalBody.innerHTML = `
+            <div style="padding: 1.5rem; color: var(--text-main); font-family: inherit;">
+                <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--lavender-dark); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.8rem;">
+                    <i data-lucide="sparkles" style="color: var(--primary);"></i>
+                    <span>Informe de Evaluación Formativa con IA</span>
+                </h2>
+                <div class="ai-report-content" style="line-height: 1.6; font-size: 0.92rem; text-align: left; display: block;">
+                    ${reportHtml}
+                </div>
+            </div>
+        `;
+        
+        $.modalOverlay.style.display = "flex";
+        if (typeof lucide !== "undefined") { lucide.createIcons(); }
+        showToast("¡Informe de logros generado con éxito!", "success");
+    } catch (err) {
+        if (err.message === "API_KEY_MISSING") {
+            showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
+        } else {
+            console.error(err);
+            showToast("Error de comunicación con la IA de Groq.", "error");
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
 }
