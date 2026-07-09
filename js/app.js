@@ -1,11 +1,11 @@
 // Main Application Logic & UI Bindings for Kuska Plan
 // Configuración de Supabase (opcional - si se completan, el sistema se conecta a la base de datos de producción)
-const SUPABASE_URL = ""; 
+const SUPABASE_URL = "";
 const SUPABASE_ANON_KEY = "";
 
-let supabase = null;
+let supabaseClient = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window.supabase !== "undefined") {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
 let $ = {};
@@ -15,7 +15,7 @@ function initDOMCache() {
         // App screens
         authScreen: document.getElementById("auth-screen"),
         dashboardScreen: document.getElementById("dashboard-screen"),
-        
+
         // Auth UI
         loginForm: document.getElementById("login-form"),
         teacherEmail: document.getElementById("teacher-email"),
@@ -33,7 +33,7 @@ function initDOMCache() {
         regAulaName: document.getElementById("reg-aula-name"),
         regSchoolYear: document.getElementById("reg-school-year"),
         regAulaAge: document.getElementById("reg-aula-age"),
-        
+
         // Sidebar Menu Links
         menuPlanificador: document.getElementById("menu-planificador"),
         menuCurriculo: document.getElementById("menu-curriculo"),
@@ -55,34 +55,34 @@ function initDOMCache() {
         btnSaveHistory: document.getElementById("btn-save-history"),
         btnClearHistory: document.getElementById("btn-clear-history"),
         btnSavePlanShortcut: document.getElementById("btn-save-plan-shortcut"),
-        
+
         // Planner Wizard UI
         stepIndicators: document.querySelectorAll(".step-indicator"),
         stepContents: document.querySelectorAll(".step-content"),
-        
+
         // Step A Age cards
         ageCards: document.querySelectorAll(".age-card"),
         ageBtnNext: document.getElementById("age-btn-next"),
-        
+
         // Step B Situation
         situationTextarea: document.getElementById("situation-textarea"),
         suggestionItems: document.querySelectorAll(".suggestion-item"),
         situationBtnBack: document.getElementById("situation-btn-back"),
         situationBtnNext: document.getElementById("situation-btn-next"),
-        
+
         // Tab Nav
         tabBtns: document.querySelectorAll(".tab-nav-btn"),
         tabPanels: document.querySelectorAll(".tab-panel"),
-        
+
         // Tab 1: Routines
         routinesContainer: document.getElementById("routines-container"),
-        
+
         // Tab 2: Free Play
         momentSteps: document.getElementById("moment-steps"),
         momentContentContainer: document.getElementById("moment-content-container"),
         momentBtnPrev: document.getElementById("moment-btn-prev"),
         momentBtnNext: document.getElementById("moment-btn-next"),
-        
+
         // Tab 3: Session
         areaSelect: document.getElementById("area-select"),
         competenceSelect: document.getElementById("competence-select"),
@@ -91,7 +91,7 @@ function initDOMCache() {
         didacticStepsNav: document.getElementById("didactic-steps-nav"),
         didacticStepsContent: document.getElementById("didactic-steps-content"),
         btnKuskaIa: document.getElementById("btn-kuska-ia"),
-        
+
         // Step C button back
         stepCBtnBack: document.getElementById("step-c-btn-back"),
         stepCBtnNext: document.getElementById("step-c-btn-next"),
@@ -99,12 +99,12 @@ function initDOMCache() {
         btnStep4Copy: document.getElementById("btn-step4-copy"),
         btnStep4Print: document.getElementById("btn-step4-print"),
         step4DocumentContainer: document.getElementById("step4-document-container"),
-        
+
         // Inclusion
         inclusionSwitch: document.getElementById("inclusion-switch"),
         inclusionDrawer: document.getElementById("inclusion-drawer"),
         inclusionRecList: document.getElementById("inclusion-rec-list"),
-        
+
         // Evaluation Table & Stats
         evaluationTableHead: document.getElementById("evaluation-table-head"),
         evaluationTableBody: document.getElementById("evaluation-table-body"),
@@ -112,18 +112,18 @@ function initDOMCache() {
         statLogrado: document.getElementById("stat-logrado"),
         statProceso: document.getElementById("stat-proceso"),
         statInicio: document.getElementById("stat-inicio"),
-        
+
         // Currículo View Explorer
         curriculumSearchInput: document.getElementById("curriculum-search-input"),
         curriculumExplorerContainer: document.getElementById("curriculum-explorer-container"),
-        
+
         // Mis Alumnos View Manager
         rosterAddBtn: document.getElementById("roster-add-btn"),
         rosterContainer: document.getElementById("roster-container"),
         globalNeeTagsContainer: document.getElementById("global-nee-tags-container"),
         newNeeTagInput: document.getElementById("new-nee-tag-input"),
         btnAddNeeTag: document.getElementById("btn-add-nee-tag"),
-        
+
         // Configuración View
         configForm: document.getElementById("config-form"),
         configIeName: document.getElementById("config-ie-name"),
@@ -142,7 +142,7 @@ function initDOMCache() {
         configStatNee: document.getElementById("config-stat-nee"),
         btnModeLight: document.getElementById("btn-mode-light"),
         btnModeDark: document.getElementById("btn-mode-dark"),
-        
+
         // Export Modal & Toast
         btnExportPlan: document.getElementById("btn-export-plan"),
         modalOverlay: document.getElementById("modal-overlay"),
@@ -169,7 +169,7 @@ function bindEvents() {
     $.togglePasswordBtn.addEventListener("click", togglePasswordVisibility);
     $.loginForm.addEventListener("submit", handleLogin);
     $.logoutBtn.addEventListener("click", handleLogout);
-    
+
     // Auth view switching
     $.linkShowRegister.addEventListener("click", (e) => {
         e.preventDefault();
@@ -301,15 +301,15 @@ function bindEvents() {
     themeButtons.forEach(btn => {
         btn.addEventListener("click", () => {
             const theme = btn.getAttribute("data-theme");
-            
+
             // Remove active classes
             themeButtons.forEach(b => b.classList.remove("active"));
             btn.classList.add("active");
-            
+
             // Apply theme class to body
             document.body.classList.remove("theme-mint", "theme-lavender");
             document.body.classList.add(`theme-${theme}`);
-            
+
             showToast(`Paleta cambiada a ${btn.querySelector('span:last-child').textContent}`, "success");
         });
     });
@@ -359,7 +359,7 @@ function bindEvents() {
 // Router Logic: Switch Dashboard Views
 function switchView(viewKey) {
     state.activeView = viewKey;
-    
+
     // Sidebar active status
     const menuItems = [
         { key: "planificador", el: $.menuPlanificador },
@@ -369,7 +369,7 @@ function switchView(viewKey) {
         { key: "configuracion", el: $.menuConfiguracion },
         { key: "historial", el: $.menuHistorial }
     ];
-    
+
     menuItems.forEach(item => {
         item.el.classList.remove("active");
         if (item.key === viewKey) {
@@ -448,7 +448,7 @@ function saveUserData(email, data) {
 
 async function saveCurrentUserSession() {
     if (!state.currentUser) return;
-    
+
     // Local storage fallback
     saveUserData(state.currentUser.email, {
         config: state.config,
@@ -456,16 +456,16 @@ async function saveCurrentUserSession() {
         rubrics: state.evaluation.rubrics,
         savedPlans: state.savedPlans
     });
-    
+
     // Supabase sync
-    if (supabase) {
+    if (supabaseClient) {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await supabaseClient.auth.getUser();
             if (!user) return;
             const userId = user.id;
-            
+
             // 1. Sync Profile
-            await supabase.from('profiles').upsert({
+            await supabaseClient.from('profiles').upsert({
                 id: userId,
                 email: state.currentUser.email,
                 ie_name: state.config.ieName,
@@ -474,9 +474,9 @@ async function saveCurrentUserSession() {
                 teacher_title: state.config.teacherTitle,
                 school_year: state.config.schoolYear
             });
-            
+
             // 2. Sync Students (Delete first, then insert to preserve list state)
-            await supabase.from('students').delete().eq('user_id', userId);
+            await supabaseClient.from('students').delete().eq('user_id', userId);
             if (state.evaluation.students.length > 0) {
                 const studentsData = state.evaluation.students.map(s => ({
                     id: s.id,
@@ -484,11 +484,11 @@ async function saveCurrentUserSession() {
                     name: s.name,
                     nee: s.nee
                 }));
-                await supabase.from('students').insert(studentsData);
+                await supabaseClient.from('students').insert(studentsData);
             }
-            
+
             // 3. Sync Rubrics (Delete first, then insert)
-            await supabase.from('rubrics').delete().eq('user_id', userId);
+            await supabaseClient.from('rubrics').delete().eq('user_id', userId);
             const rubricsData = [];
             for (const studentId in state.evaluation.rubrics) {
                 const studentGrades = state.evaluation.rubrics[studentId];
@@ -502,11 +502,11 @@ async function saveCurrentUserSession() {
                 }
             }
             if (rubricsData.length > 0) {
-                await supabase.from('rubrics').insert(rubricsData);
+                await supabaseClient.from('rubrics').insert(rubricsData);
             }
-            
+
             // 4. Sync Plans (Delete first, then insert)
-            await supabase.from('plans').delete().eq('user_id', userId);
+            await supabaseClient.from('plans').delete().eq('user_id', userId);
             if (state.savedPlans.length > 0) {
                 const plansData = state.savedPlans.map(p => ({
                     id: p.id,
@@ -523,7 +523,7 @@ async function saveCurrentUserSession() {
                     didactic_steps: p.didacticSteps,
                     transversals: p.transversals
                 }));
-                await supabase.from('plans').insert(plansData);
+                await supabaseClient.from('plans').insert(plansData);
             }
         } catch (err) {
             console.error("Error syncing to Supabase:", err);
@@ -539,11 +539,11 @@ async function handleLogin(e) {
         showToast("Por favor ingresa correo y contraseña.", "warning");
         return;
     }
-    
+
     // Supabase auth
-    if (supabase) {
+    if (supabaseClient) {
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });
@@ -551,22 +551,22 @@ async function handleLogin(e) {
                 showToast("Error de acceso: " + error.message, "error");
                 return;
             }
-            
+
             const userId = data.user.id;
             const userName = data.user.user_metadata?.name || email.split('@')[0];
-            
+
             // Load from Supabase tables
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
-            const { data: students } = await supabase.from('students').select('*').eq('user_id', userId);
-            const { data: rubrics } = await supabase.from('rubrics').select('*').eq('user_id', userId);
-            const { data: plans } = await supabase.from('plans').select('*').eq('user_id', userId);
-            
+            const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', userId).single();
+            const { data: students } = await supabaseClient.from('students').select('*').eq('user_id', userId);
+            const { data: rubrics } = await supabaseClient.from('rubrics').select('*').eq('user_id', userId);
+            const { data: plans } = await supabaseClient.from('plans').select('*').eq('user_id', userId);
+
             state.currentUser = {
                 email: email,
                 name: profile?.teacher_title || userName,
                 password: password
             };
-            
+
             state.config = {
                 ieName: profile?.ie_name || "",
                 aulaName: profile?.aula_name || "",
@@ -574,13 +574,13 @@ async function handleLogin(e) {
                 teacherTitle: profile?.teacher_title || userName,
                 schoolYear: profile?.school_year || ""
             };
-            
+
             state.evaluation.students = (students || []).map(s => ({
                 id: s.id,
                 name: s.name,
                 nee: s.nee || []
             }));
-            
+
             state.evaluation.rubrics = {};
             (rubrics || []).forEach(r => {
                 if (!state.evaluation.rubrics[r.student_id]) {
@@ -588,7 +588,7 @@ async function handleLogin(e) {
                 }
                 state.evaluation.rubrics[r.student_id][r.capacity] = r.grade;
             });
-            
+
             state.savedPlans = (plans || []).map(p => ({
                 id: p.id,
                 title: p.title || '',
@@ -603,7 +603,7 @@ async function handleLogin(e) {
                 didacticSteps: p.didactic_steps,
                 transversals: p.transversals
             }));
-            
+
             state.selectedAge = state.config.aulaAge;
             updateInclusionDrawer();
             renderSituationSuggestions();
@@ -615,19 +615,19 @@ async function handleLogin(e) {
             return;
         }
     }
-    
+
     // Local storage fallback
     const user = findUserByEmail(email);
     if (!user) {
         showToast("Este correo no está registrado. Regístrate primero.", "error");
         return;
     }
-    
+
     if (user.password !== password) {
         showToast("Contraseña incorrecta.", "error");
         return;
     }
-    
+
     state.currentUser = {
         email: user.email,
         name: user.name,
@@ -654,21 +654,21 @@ async function handleRegister(e) {
     const aulaName = $.regAulaName.value.trim();
     const aulaAge = $.regAulaAge ? $.regAulaAge.value : "4_anios";
     const schoolYear = $.regSchoolYear.value.trim();
-    
+
     if (!name || !email || !password) {
         showToast("Nombre, Correo y Contraseña son obligatorios.", "warning");
         return;
     }
-    
+
     if (password.length < 8) {
         showToast("La contraseña debe tener al menos 8 caracteres.", "error");
         return;
     }
-    
+
     // Supabase auth register
-    if (supabase) {
+    if (supabaseClient) {
         try {
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await supabaseClient.auth.signUp({
                 email: email,
                 password: password,
                 options: {
@@ -681,20 +681,20 @@ async function handleRegister(e) {
                 showToast("Error de registro: " + error.message, "error");
                 return;
             }
-            
+
             // Insert profile details
-            const { error: profileError } = await supabase.from('profiles').update({
+            const { error: profileError } = await supabaseClient.from('profiles').update({
                 ie_name: ieName,
                 aula_name: aulaName,
                 aula_age: aulaAge,
                 teacher_title: name,
                 school_year: schoolYear
             }).eq('id', data.user.id);
-            
+
             if (profileError) {
                 console.error("Error creating Supabase user profile table entry:", profileError);
             }
-            
+
             state.currentUser = {
                 name: name,
                 email: email,
@@ -711,7 +711,7 @@ async function handleRegister(e) {
             state.evaluation.students = [];
             state.evaluation.rubrics = {};
             state.savedPlans = [];
-            
+
             updateInclusionDrawer();
             renderSituationSuggestions();
             renderDashboard();
@@ -722,14 +722,14 @@ async function handleRegister(e) {
             return;
         }
     }
-    
+
     // Local storage register
     const existing = findUserByEmail(email);
     if (existing) {
         showToast("El correo electrónico ya está registrado.", "error");
         return;
     }
-    
+
     const newUser = {
         name: name,
         email: email,
@@ -745,11 +745,11 @@ async function handleRegister(e) {
         rubrics: {},
         savedPlans: []
     };
-    
+
     const users = getStoredUsers();
     users.push(newUser);
     saveStoredUsers(users);
-    
+
     state.currentUser = {
         name: name,
         email: email,
@@ -760,7 +760,7 @@ async function handleRegister(e) {
     state.evaluation.students = [];
     state.evaluation.rubrics = {};
     state.savedPlans = [];
-    
+
     updateInclusionDrawer();
     renderSituationSuggestions();
     renderDashboard();
@@ -768,10 +768,10 @@ async function handleRegister(e) {
 }
 
 async function handleLogout() {
-    if (supabase) {
-        await supabase.auth.signOut();
+    if (supabaseClient) {
+        await supabaseClient.auth.signOut();
     }
-    
+
     state.currentUser = null;
     state.selectedAge = null;
     state.significantSituation = "";
@@ -785,7 +785,7 @@ async function handleLogout() {
     $.inclusionSwitch.checked = false;
     $.inclusionDrawer.style.display = "none";
     $.situationTextarea.value = "";
-    
+
     $.ageCards.forEach(c => c.classList.remove("active"));
     renderAuth();
 }
@@ -793,15 +793,15 @@ async function handleLogout() {
 function renderAuth() {
     $.authScreen.style.display = "flex";
     $.dashboardScreen.style.display = "none";
-    
+
     // Show login form, hide register form by default
     $.loginFormWrapper.style.display = "block";
     $.registerFormWrapper.style.display = "none";
-    
+
     // Reset login values
     $.teacherEmail.value = "";
     $.teacherPassword.value = "";
-    
+
     // Reset registration values
     $.regTeacherName.value = "";
     $.regTeacherEmail.value = "";
@@ -809,7 +809,7 @@ function renderAuth() {
     $.regIeName.value = "";
     $.regAulaName.value = "";
     $.regSchoolYear.value = "";
-    
+
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
 
@@ -817,23 +817,23 @@ function renderDashboard() {
     $.authScreen.style.display = "none";
     $.dashboardScreen.style.display = "grid";
     $.sidebarUserName.textContent = state.currentUser.name;
-    
+
     if ($.sidebarAvatar) {
         $.sidebarAvatar.textContent = state.currentUser.name.charAt(0).toUpperCase() || "M";
     }
-    
+
     state.selectedAge = state.config.aulaAge || "4_anios";
     updateInclusionDrawer();
-    
+
     switchView("planificador");
     goToStep(1);
     switchScheduleTab("routines");
-    
+
     setupRoutinesUI();
     setupFreePlayWizard();
     setupCurriculumSelectors();
     setupTransversalsUI();
-    
+
     updateEvaluationTable();
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
@@ -841,11 +841,11 @@ function renderDashboard() {
 // Step Navigation
 function goToStep(stepNum) {
     state.currentStep = stepNum;
-    
+
     $.stepIndicators.forEach((ind, index) => {
         const stepIndex = index + 1;
         ind.classList.remove("active", "completed");
-        
+
         if (stepIndex === state.currentStep) {
             ind.classList.add("active");
         } else if (stepIndex < state.currentStep) {
@@ -878,7 +878,7 @@ function selectAge(ageKey) {
             card.classList.add("active");
         }
     });
-    
+
     // Auto-update inclusion suggestions when age changes
     updateInclusionDrawer();
     showToast(`Edad seleccionada: ${ageKey === "3_anios" ? "3 años" : ageKey === "4_anios" ? "4 años" : "5 años"}`, "success");
@@ -887,7 +887,7 @@ function selectAge(ageKey) {
 // Switch Schedule tabs
 function switchScheduleTab(tabId) {
     state.activeScheduleTab = tabId;
-    
+
     $.tabBtns.forEach(btn => {
         btn.classList.remove("active");
         if (btn.getAttribute("data-tab") === tabId) {
@@ -930,7 +930,7 @@ function switchScheduleTab(tabId) {
 // Tab 1: Routines Layout Initialization
 function setupRoutinesUI() {
     $.routinesContainer.innerHTML = "";
-    
+
     const categories = [
         { key: "recibimiento", title: "Rutinas de Recibimiento", icon: "sun" },
         { key: "higiene", title: "Rutinas de Higiene", icon: "droplet" },
@@ -948,9 +948,9 @@ function setupRoutinesUI() {
     categories.forEach(cat => {
         const card = document.createElement("div");
         card.className = "routine-card";
-        
+
         let headerColorClass = cat.key;
-        
+
         card.innerHTML = `
             <h4 class="routine-card-title ${headerColorClass}">
                 <i data-lucide="${cat.icon}" class="icon-sm"></i>
@@ -958,17 +958,17 @@ function setupRoutinesUI() {
             </h4>
             <div class="routine-list" id="routine-list-${cat.key}"></div>
         `;
-        
+
         $.routinesContainer.appendChild(card);
         const listDiv = card.querySelector(`#routine-list-${cat.key}`);
-        
+
         state.routines[cat.key].forEach((item, index) => {
             const label = document.createElement("label");
             label.className = "routine-checkbox-item";
             label.style = "display: flex; align-items: center; justify-content: space-between; width: 100%; cursor: pointer; padding: 0.35rem 0.6rem; border-radius: var(--radius-sm); transition: var(--transition);";
-            
+
             const isChecked = state.routinesChecked[cat.key][item] !== false;
-            
+
             label.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 0.6rem; flex: 1;">
                     <input type="checkbox" ${isChecked ? 'checked' : ''} data-category="${cat.key}" data-index="${index}">
@@ -978,14 +978,14 @@ function setupRoutinesUI() {
                     <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
                 </button>
             `;
-            
+
             listDiv.appendChild(label);
-            
+
             const chk = label.querySelector("input[type='checkbox']");
             chk.addEventListener("change", (e) => {
                 state.routinesChecked[cat.key][item] = e.target.checked;
             });
-            
+
             const delBtn = label.querySelector(".btn-delete-routine");
             delBtn.addEventListener("click", (e) => {
                 e.preventDefault();
@@ -1004,10 +1004,10 @@ function setupRoutinesUI() {
                 <i data-lucide="plus" style="width: 16px; height: 16px; color: var(--primary);"></i>
             </button>
         `;
-        
+
         const addInput = addBlock.querySelector(".routine-custom-input");
         const addBtn = addBlock.querySelector(".btn-add-routine-submit");
-        
+
         const submitRoutine = () => {
             const val = addInput.value.trim();
             if (val) {
@@ -1016,7 +1016,7 @@ function setupRoutinesUI() {
                 setupRoutinesUI();
             }
         };
-        
+
         addBtn.addEventListener("click", submitRoutine);
         addInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
@@ -1024,10 +1024,10 @@ function setupRoutinesUI() {
                 submitRoutine();
             }
         });
-        
+
         card.appendChild(addBlock);
     });
-    
+
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
 
@@ -1127,7 +1127,7 @@ function autoPopulateFreePlayMoments() {
             "Entregamos hojas de papel"
         ];
         const isDefault = defaultTexts.some(def => moment.content.startsWith(def)) || !moment.content.trim();
-        
+
         if (isDefault) {
             const rawSug = FREE_PLAY_SUGGESTIONS[idx][0];
             const populated = rawSug
@@ -1144,16 +1144,16 @@ function renderFreePlayMoment() {
     const curIndex = state.freePlay.currentMoment;
     autoPopulateFreePlayMoments();
     const moment = state.freePlay.moments[curIndex];
-    
+
     // Resolve thematic replacements based on Paso B Situation
     const context = getThematicContext(state.significantSituation);
     const suggestions = (FREE_PLAY_SUGGESTIONS[curIndex] || []).map(s => {
         return s.replace(/{song}/g, context.song)
-                .replace(/{topic}/g, context.topic)
-                .replace(/{toy}/g, context.toy)
-                .replace(/{drawing}/g, context.drawing);
+            .replace(/{topic}/g, context.topic)
+            .replace(/{toy}/g, context.toy)
+            .replace(/{drawing}/g, context.drawing);
     });
-    
+
     $.momentSteps.innerHTML = "";
     state.freePlay.moments.forEach((m, idx) => {
         const stepDiv = document.createElement("div");
@@ -1162,14 +1162,14 @@ function renderFreePlayMoment() {
             state.freePlay.currentMoment = idx;
             renderFreePlayMoment();
         });
-        
+
         stepDiv.innerHTML = `
             <div class="moment-dot">${idx + 1}</div>
             <span class="moment-label">${m.name}</span>
         `;
         $.momentSteps.appendChild(stepDiv);
     });
-    
+
     const line = document.createElement("div");
     line.className = "moments-line";
     $.momentSteps.appendChild(line);
@@ -1180,7 +1180,7 @@ function renderFreePlayMoment() {
     } else {
         $.momentBtnNext.innerHTML = `<span>Siguiente Momento</span> <i data-lucide="arrow-right" class="icon-sm"></i>`;
     }
-    
+
     $.momentContentContainer.innerHTML = `
         <div class="moment-header">
             <span class="moment-badge">Momento ${curIndex + 1} de 6</span>
@@ -1215,7 +1215,7 @@ function renderFreePlayMoment() {
             </div>
         </div>
     `;
-    
+
     const textarea = $.momentContentContainer.querySelector(".moment-textarea");
     textarea.addEventListener("input", (e) => {
         state.freePlay.moments[curIndex].content = e.target.value;
@@ -1224,20 +1224,20 @@ function renderFreePlayMoment() {
     const suggestionItems = $.momentContentContainer.querySelectorAll(".moment-suggestion-item");
     suggestionItems.forEach(item => {
         item.style.transition = "all 0.2s ease";
-        
+
         item.addEventListener("click", () => {
             const val = item.getAttribute("data-value");
             textarea.value = val;
             state.freePlay.moments[curIndex].content = val;
             showToast("Estrategia sugerida aplicada.", "success");
         });
-        
+
         item.addEventListener("mouseenter", () => {
             item.style.borderColor = "var(--primary)";
             item.style.backgroundColor = "var(--primary-light)";
             item.style.transform = "translateX(4px)";
         });
-        
+
         item.addEventListener("mouseleave", () => {
             item.style.borderColor = "var(--border-color)";
             item.style.backgroundColor = "var(--white)";
@@ -1282,13 +1282,13 @@ function handleAreaChange() {
     state.session.selectedArea = areaKey;
     state.session.selectedCompetence = "";
     state.session.selectedCapacities = [];
-    
+
     const compContainer = document.getElementById("competencies-checkbox-container");
     if (compContainer) {
         compContainer.innerHTML = "";
     }
     $.capacitiesContainer.innerHTML = `<p class="text-muted" style="font-size:0.8rem; margin: 0;">Selecciona una o más competencias para listar las capacidades.</p>`;
-    
+
     if (areaKey && CURRICULUM_DATA[areaKey]) {
         const competencies = CURRICULUM_DATA[areaKey].competencies;
         for (const compKey in competencies) {
@@ -1300,7 +1300,7 @@ function handleAreaChange() {
                 <span>${competencies[compKey].name}</span>
             `;
             if (compContainer) compContainer.appendChild(label);
-            
+
             const checkbox = label.querySelector("input");
             checkbox.addEventListener("change", () => {
                 handleCompetenciesToggle();
@@ -1311,7 +1311,7 @@ function handleAreaChange() {
         if (compContainer) compContainer.innerHTML = `<p class="text-muted" style="font-size:0.8rem; margin:0;">Selecciona un área curricular primero.</p>`;
         clearDidacticFlow();
     }
-    
+
     updateInclusionDrawer();
     updateEvaluationTable();
 }
@@ -1321,24 +1321,24 @@ function handleCompetenciesToggle() {
     const compContainer = document.getElementById("competencies-checkbox-container");
     if (!compContainer) return;
     const checkedCheckboxes = compContainer.querySelectorAll("input:checked");
-    
+
     const selectedCompKeys = Array.from(checkedCheckboxes).map(cb => cb.value);
     state.session.selectedCompetence = selectedCompKeys.join(",");
     state.session.selectedCapacities = [];
-    
+
     $.capacitiesContainer.innerHTML = "";
-    
+
     if (areaKey && selectedCompKeys.length > 0) {
         const labelText = document.createElement("span");
         labelText.className = "capacities-label";
         labelText.textContent = "Capacidades:";
         labelText.style = "font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 0.5rem; display: block;";
         $.capacitiesContainer.appendChild(labelText);
-        
+
         const scrollDiv = document.createElement("div");
         scrollDiv.className = "capacities-container";
         scrollDiv.style = "display: flex; flex-direction: column; gap: 0.5rem; flex: 1; overflow-y: auto; background-color: var(--bg-app); padding: 0.8rem; border-radius: var(--radius-md); border: 1.5px solid var(--border-color);";
-        
+
         selectedCompKeys.forEach(compKey => {
             const compObj = CURRICULUM_DATA[areaKey].competencies[compKey];
             if (compObj) {
@@ -1350,9 +1350,9 @@ function handleCompetenciesToggle() {
                         <input type="checkbox" checked data-capacity="${cap}" style="margin-top: 0.1rem; width: 14px; height: 14px; accent-color: var(--primary);">
                         <span class="capacity-text">${cap}</span>
                     `;
-                    
+
                     state.session.selectedCapacities.push(cap);
-                    
+
                     const checkbox = itemLabel.querySelector("input");
                     checkbox.addEventListener("change", (e) => {
                         if (e.target.checked) {
@@ -1365,19 +1365,19 @@ function handleCompetenciesToggle() {
                         updateEvaluationTable();
                         updateEvaluationStats();
                     });
-                    
+
                     scrollDiv.appendChild(itemLabel);
                 });
             }
         });
-        
+
         $.capacitiesContainer.appendChild(scrollDiv);
         triggerInstantPlanGeneration();
     } else {
         $.capacitiesContainer.innerHTML = `<p class="text-muted" style="font-size:0.8rem; margin:0;">Selecciona competencias para listar capacidades.</p>`;
         clearDidacticFlow();
     }
-    
+
     updateEvaluationTable();
 }
 
@@ -1392,58 +1392,58 @@ function triggerInstantPlanGeneration() {
     const age = state.selectedAge || "4_anios";
     const area = state.session.selectedArea;
     const comp = state.session.selectedCompetence;
-    
+
     if (!age || !area || !comp) return;
-    
+
     const primaryComp = comp.split(",")[0];
     const plan = getAutomaticPlan(age, area, primaryComp);
-    
+
     // Sync title and materials to state
     state.session.title = plan.title;
     state.session.materials = plan.materials;
-    
+
     // 1. Context & Significant Situation auto-fill
     state.significantSituation = plan.situation;
     $.situationTextarea.value = plan.situation;
-    
+
     // 2. Free play moments auto-fill
     state.freePlay.moments = plan.freePlay;
     renderFreePlayMoment();
-    
+
     // 3. Didactic Steps auto-fill
     state.session.didacticSteps = plan.didacticSteps;
     state.session.activeDidacticStep = 0;
     renderDidacticSteps();
-    
+
     // 4. Update evaluations lists with random grades for mockup realism
     state.evaluation.students.forEach(st => {
         state.session.selectedCapacities.forEach(cap => {
             getStudentGrade(st.id, cap); // forces creation
         });
     });
-    
+
     // Sync routines values
     state.routines.recibimiento = plan.routines.recibimiento;
     state.routines.higiene = plan.routines.higiene;
     state.routines.alimentacion = plan.routines.alimentacion;
     setupRoutinesUI();
-    
+
     updateEvaluationTable();
     updateEvaluationStats();
     updateInclusionDrawer();
-    
+
     showToast("¡Planificación curricular autocompletada por Kuska IA!", "success");
 }
 
 // Setup Transversals
 function setupTransversalsUI() {
     $.transversalsContainer.innerHTML = "";
-    
+
     for (const key in TRANSVERSAL_COMPETENCIES) {
         const comp = TRANSVERSAL_COMPETENCIES[key];
         const panel = document.createElement("div");
         panel.className = "transversal-item";
-        
+
         panel.innerHTML = `
             <label class="transversal-header-item">
                 <input type="checkbox" id="trans-check-${key}">
@@ -1451,12 +1451,12 @@ function setupTransversalsUI() {
             </label>
             <div class="transversal-capacities-list" id="trans-caps-${key}" style="display:none;"></div>
         `;
-        
+
         $.transversalsContainer.appendChild(panel);
-        
+
         const mainCheckbox = panel.querySelector(`#trans-check-${key}`);
         const capsList = panel.querySelector(`#trans-caps-${key}`);
-        
+
         comp.capacities.forEach((cap, index) => {
             const capLabel = document.createElement("label");
             capLabel.className = "transversal-cap-label";
@@ -1464,7 +1464,7 @@ function setupTransversalsUI() {
                 <input type="checkbox" data-trans-cap="${cap}">
                 <span>${cap}</span>
             `;
-            
+
             capLabel.querySelector("input").addEventListener("change", (e) => {
                 if (e.target.checked) {
                     state.session.transversals[key].capacities.push(cap);
@@ -1472,10 +1472,10 @@ function setupTransversalsUI() {
                     state.session.transversals[key].capacities = state.session.transversals[key].capacities.filter(c => c !== cap);
                 }
             });
-            
+
             capsList.appendChild(capLabel);
         });
-        
+
         mainCheckbox.addEventListener("change", (e) => {
             state.session.transversals[key].checked = e.target.checked;
             if (e.target.checked) {
@@ -1494,7 +1494,7 @@ function setupDidacticFlow() {
     const area = state.session.selectedArea;
     const competence = state.session.selectedCompetence;
     let steps = [];
-    
+
     if (area === "psicomotriz") {
         steps = [
             { name: "Asamblea de Inicio", desc: "Acuerdos, delimitación del espacio y calentamiento inicial.", content: "" },
@@ -1531,7 +1531,7 @@ function setupDidacticFlow() {
             { name: "Cierre (Metacognición)", desc: "Recapitulación.", content: "" }
         ];
     }
-    
+
     state.session.didacticSteps = steps;
     state.session.activeDidacticStep = 0;
     renderDidacticSteps();
@@ -1549,14 +1549,14 @@ function renderDidacticSteps() {
         clearDidacticFlow();
         return;
     }
-    
+
     // Hide the horizontal steps navigation
     $.didacticStepsNav.style.display = "none";
-    
+
     let html = `
         <div class="didactic-vertical-timeline" style="position: relative; display: flex; flex-direction: column; gap: 1.5rem; padding-left: 1.5rem; border-left: 2px dashed var(--border-color); margin-top: 1rem;">
     `;
-    
+
     state.session.didacticSteps.forEach((step, idx) => {
         let dotColor = "var(--primary)";
         let phaseLabel = "DESARROLLO";
@@ -1570,7 +1570,7 @@ function renderDidacticSteps() {
             dotColor = "#27ae60"; // Green
             phaseLabel = `DESARROLLO (Proceso Didáctico ${idx})`;
         }
-        
+
         html += `
             <div class="didactic-timeline-item" style="position: relative; background-color: var(--white); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-soft); transition: all 0.2s ease;">
                 <div style="position: absolute; left: -31px; top: 22px; width: 14px; height: 14px; border-radius: 50%; background-color: ${dotColor}; border: 3px solid var(--white); box-shadow: 0 0 0 2px ${dotColor};"></div>
@@ -1596,30 +1596,30 @@ function renderDidacticSteps() {
             </div>
         `;
     });
-    
+
     html += `</div>`;
     $.didacticStepsContent.innerHTML = html;
-    
+
     const textareas = $.didacticStepsContent.querySelectorAll(".didactic-textarea");
     textareas.forEach(textarea => {
         textarea.addEventListener("input", (e) => {
             const idx = parseInt(e.target.getAttribute("data-step-index"));
             state.session.didacticSteps[idx].content = e.target.value;
         });
-        
+
         textarea.addEventListener("focus", () => {
             textarea.style.borderColor = "var(--primary)";
             textarea.style.backgroundColor = "var(--white)";
             textarea.style.boxShadow = "var(--shadow-glow)";
         });
-        
+
         textarea.addEventListener("blur", () => {
             textarea.style.borderColor = "var(--border-color)";
             textarea.style.backgroundColor = "var(--white)";
             textarea.style.boxShadow = "none";
         });
     });
-    
+
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
 
@@ -1639,7 +1639,7 @@ function generateLessonWithKuskaIa() {
     const label = $.btnKuskaIa.querySelector("span");
     const originalText = label.textContent;
     label.textContent = "Kuska IA enriqueciendo textos...";
-    
+
     setTimeout(() => {
         const aiData = AI_GENERATOR_DATABASE[area] || AI_GENERATOR_DATABASE["personal_social"];
         state.session.didacticSteps.forEach((step, idx) => {
@@ -1670,13 +1670,13 @@ function handleInclusionToggle(e) {
 function updateInclusionDrawer() {
     if (!$.inclusionRecList) return;
     $.inclusionRecList.innerHTML = "";
-    
+
     const age = state.selectedAge || "4_anios";
     const area = state.session.selectedArea || "personal_social";
-    
+
     // Invoke inclusion generator
     const tips = getInclusionTips(age, area, state.evaluation.students);
-    
+
     tips.forEach(rec => {
         const li = document.createElement("li");
         li.className = "inclusion-rec-item";
@@ -1688,7 +1688,7 @@ function updateInclusionDrawer() {
 // Evaluation Table
 function updateEvaluationTable() {
     const capacities = state.session.selectedCapacities;
-    
+
     if (capacities.length === 0) {
         $.evaluationTableHead.innerHTML = `
             <tr>
@@ -1721,17 +1721,17 @@ function updateEvaluationTable() {
                 </td>
             </tr>
         `;
-        
+
         // Bind click events on the loaded empty state buttons
         const btnDemo = document.getElementById("btn-load-demo-rubric");
         const btnPlanner = document.getElementById("btn-go-to-planner");
         if (btnDemo) btnDemo.addEventListener("click", loadDemoRubric);
         if (btnPlanner) btnPlanner.addEventListener("click", () => switchView("planificador"));
-        
+
         if (typeof lucide !== "undefined") { lucide.createIcons(); }
         return;
     }
-    
+
     let headerHtml = `
         <tr>
             <th style="width: 250px;">Nombre del Estudiante</th>
@@ -1754,7 +1754,7 @@ function updateEvaluationTable() {
                 <input type="text" class="student-name-input" value="${student.name}" data-student-id="${student.id}">
             </td>
         `;
-        
+
         capacities.forEach(cap => {
             const currentGrade = getStudentGrade(student.id, cap);
             colsHtml += `
@@ -1767,7 +1767,7 @@ function updateEvaluationTable() {
                 </td>
             `;
         });
-        
+
         colsHtml += `
             <td style="text-align: center;">
                 <button type="button" class="btn-remove-student" data-student-id="${student.id}">
@@ -1775,10 +1775,10 @@ function updateEvaluationTable() {
                 </button>
             </td>
         `;
-        
+
         row.innerHTML = colsHtml;
         $.evaluationTableBody.appendChild(row);
-        
+
         const nameInput = row.querySelector(".student-name-input");
         nameInput.addEventListener("input", (e) => {
             student.name = e.target.value;
@@ -1797,7 +1797,7 @@ function updateEvaluationTable() {
                 updateEvaluationStats();
             });
         });
-        
+
         const removeBtn = row.querySelector(".btn-remove-student");
         removeBtn.addEventListener("click", () => {
             removeStudent(student.id);
@@ -1822,7 +1822,7 @@ function loadDemoRubric() {
         "Platos primarios para agrupación"
     ];
     state.significantSituation = "Los niños del aula de 5 años exploran cómo agrupar objetos cotidianos de su entorno.";
-    
+
     // Auto-fill student grades
     state.evaluation.students.forEach(st => {
         state.session.selectedCapacities.forEach((cap, index) => {
@@ -1831,7 +1831,7 @@ function loadDemoRubric() {
             setStudentGrade(st.id, cap, mockGrade);
         });
     });
-    
+
     // Re-render views
     updateEvaluationTable();
     updateEvaluationStats();
@@ -1895,8 +1895,8 @@ function setStudentGrade(studentId, capacity, grade) {
 }
 
 function addStudentFromRubric() {
-    const nextId = state.evaluation.students.length > 0 
-        ? Math.max(...state.evaluation.students.map(s => s.id)) + 1 
+    const nextId = state.evaluation.students.length > 0
+        ? Math.max(...state.evaluation.students.map(s => s.id)) + 1
         : 1;
     const newStudent = {
         id: nextId,
@@ -2007,7 +2007,7 @@ function renderCurriculumExplorer() {
             areaCard.className = "curriculum-area-card";
             areaCard.style.padding = "1.5rem";
             areaCard.style.marginBottom = "1.5rem";
-            
+
             let compsHtml = "";
             for (const compKey in matchingCompetencies) {
                 const comp = matchingCompetencies[compKey];
@@ -2075,14 +2075,14 @@ function renderCurriculumExplorer() {
 function selectCurriculumCompetence(compKey) {
     const idea = CURRICULUM_IDEAS[compKey];
     if (!idea) return;
-    
+
     // Set active class visually to the clicked item
     const items = document.querySelectorAll(".curriculum-comp-item");
     items.forEach(el => el.classList.remove("active-ideator"));
-    
+
     const activeEl = document.querySelector(`[data-comp-key="${compKey}"]`);
     if (activeEl) activeEl.classList.add("active-ideator");
-    
+
     renderCurriculumIdeas(compKey, idea, false);
 }
 
@@ -2191,13 +2191,13 @@ function renderCurriculumIdeas(compKey, idea, isAdapted = false) {
 function generateThematicIdea(compKey, theme) {
     const defaultIdea = CURRICULUM_IDEAS[compKey];
     if (!defaultIdea) return;
-    
+
     const cleanedTheme = theme.trim();
     if (!cleanedTheme) {
         renderCurriculumIdeas(compKey, defaultIdea, false);
         return;
     }
-    
+
     // Show a quick loading state to make the AI transition feel real and magical
     const container = document.getElementById("curriculum-ideator-panel");
     if (container) {
@@ -2209,25 +2209,25 @@ function generateThematicIdea(compKey, theme) {
             </div>
         `;
     }
-    
+
     setTimeout(() => {
         const thematicIdea = {
             title: `${defaultIdea.title} de ${cleanedTheme}`,
             game: `Adaptado al tema "${cleanedTheme}": ${defaultIdea.game.replace(/tapitas|objetos|cuentos|cuentitos|dibujos|dibujo|juguetes|juguete|bloques/gi, cleanedTheme.toLowerCase())}`,
             questions: defaultIdea.questions.map(q => q.replace(/objetos|juguetes|cuentos|tapitas|bloques/gi, cleanedTheme.toLowerCase())),
             materials: [
-                ...defaultIdea.materials.slice(0, 2), 
+                ...defaultIdea.materials.slice(0, 2),
                 `Recursos y juguetes temáticos sobre ${cleanedTheme}`,
                 `Ilustraciones y láminas de ${cleanedTheme}`
             ]
         };
-        
+
         renderCurriculumIdeas(compKey, thematicIdea, true);
-        
+
         // Re-insert value to the input field so the user sees their query still there
         const inputTheme = document.getElementById("curriculum-theme-input");
         if (inputTheme) inputTheme.value = cleanedTheme;
-        
+
         showToast(`Idea adaptada con éxito al tema "${cleanedTheme}"`, "success");
     }, 600);
 }
@@ -2235,7 +2235,7 @@ function generateThematicIdea(compKey, theme) {
 function triggerIaGeneration(compKey) {
     const container = document.getElementById("curriculum-ideator-panel");
     if (!container) return;
-    
+
     // Render spinner overlay or loading state
     container.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; min-height: 350px; text-align: center;">
@@ -2244,7 +2244,7 @@ function triggerIaGeneration(compKey) {
             <p class="text-muted" style="font-size: 0.82rem; max-width: 260px;">Redactando dinámicas infantiles, preguntas de indagación y materiales recomendados...</p>
         </div>
     `;
-    
+
     // Add CSS spinner animation dynamically if not present
     if (!document.getElementById("spinner-keyframe-style")) {
         const style = document.createElement("style");
@@ -2257,7 +2257,7 @@ function triggerIaGeneration(compKey) {
         `;
         document.head.appendChild(style);
     }
-    
+
     setTimeout(() => {
         // Choose a random dynamic from PEDAGOGICAL_TEMPLATES or alternate
         const areaMapping = {
@@ -2274,11 +2274,11 @@ function triggerIaGeneration(compKey) {
             resuelve_forma: "matematica",
             indaga_metodos: "ciencia_tecnologia"
         };
-        
+
         const areaKey = areaMapping[compKey] || "comunicacion";
         const templates = PEDAGOGICAL_TEMPLATES[areaKey] || PEDAGOGICAL_TEMPLATES.comunicacion;
         const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
-        
+
         renderCurriculumIdeas(compKey, randomTemplate, false);
         showToast("¡Nueva propuesta didáctica generada!", "success");
     }, 800);
@@ -2291,12 +2291,12 @@ function handleCurriculumSearch() {
 // --- VIEW PANEL 3: ROSTER/ALUMNOS MANAGER RENDER ---
 function renderRosterManager() {
     $.rosterContainer.innerHTML = "";
-    
+
     // 1. Render global NEE tag bank
     if ($.globalNeeTagsContainer) {
         $.globalNeeTagsContainer.innerHTML = "";
         const globalTags = state.evaluation.neeTags || ["TDAH", "Hipersensibilidad", "Movilidad"];
-        
+
         globalTags.forEach(tag => {
             const pill = document.createElement("span");
             pill.className = "nee-pill active";
@@ -2306,14 +2306,14 @@ function renderRosterManager() {
             pill.style.padding = "0.4rem 0.8rem";
             pill.style.fontSize = "0.8rem";
             pill.style.fontWeight = "600";
-            
+
             pill.innerHTML = `
                 <span>${tag}</span>
                 <i data-lucide="x" style="width: 12px; height: 12px; stroke-width: 3px; cursor: pointer; color: rgba(255,255,255,0.8);" data-tag="${tag}"></i>
             `;
-            
+
             $.globalNeeTagsContainer.appendChild(pill);
-            
+
             // Bind delete globally action on the close icon
             pill.querySelector("i").addEventListener("click", (e) => {
                 e.stopPropagation();
@@ -2327,10 +2327,10 @@ function renderRosterManager() {
     state.evaluation.students.forEach(st => {
         const card = document.createElement("div");
         card.className = "student-card";
-        
+
         const tags = state.evaluation.neeTags || ["TDAH", "Hipersensibilidad", "Movilidad"];
         let pillsHtml = "";
-        
+
         tags.forEach(tag => {
             const isActive = st.nee.includes(tag);
             pillsHtml += `
@@ -2382,7 +2382,7 @@ function renderRosterManager() {
             pill.addEventListener("click", () => {
                 const sId = parseInt(pill.getAttribute("data-student-id"));
                 const tag = pill.getAttribute("data-tag");
-                
+
                 const studentObj = state.evaluation.students.find(s => s.id === sId);
                 if (studentObj) {
                     if (studentObj.nee.includes(tag)) {
@@ -2402,10 +2402,10 @@ function renderRosterManager() {
 }
 
 function addStudentFromRoster() {
-    const nextId = state.evaluation.students.length > 0 
-        ? Math.max(...state.evaluation.students.map(s => s.id)) + 1 
+    const nextId = state.evaluation.students.length > 0
+        ? Math.max(...state.evaluation.students.map(s => s.id)) + 1
         : 1;
-        
+
     state.evaluation.students.push({
         id: nextId,
         name: `Estudiante Nuevo ${nextId}`,
@@ -2423,38 +2423,38 @@ function addCustomNeeTag() {
         showToast("Escribe una etiqueta antes de añadir.", "warning");
         return;
     }
-    
+
     if (!state.evaluation.neeTags) {
         state.evaluation.neeTags = ["TDAH", "Hipersensibilidad", "Movilidad"];
     }
-    
+
     // Check if tag already exists (case-insensitive checking)
     const exists = state.evaluation.neeTags.some(t => t.toLowerCase() === newTag.toLowerCase());
     if (exists) {
         showToast("Esta condición ya existe.", "warning");
         return;
     }
-    
+
     state.evaluation.neeTags.push(newTag);
     $.newNeeTagInput.value = "";
-    
+
     renderRosterManager();
     showToast(`Condición '${newTag}' añadida al aula.`, "success");
 }
 
 function removeNeeTagGlobally(tag) {
     if (!state.evaluation.neeTags) return;
-    
+
     // Remove from central list
     state.evaluation.neeTags = state.evaluation.neeTags.filter(t => t !== tag);
-    
+
     // Filter out of all students' profiles
     state.evaluation.students.forEach(st => {
         if (st.nee) {
             st.nee = st.nee.filter(t => t !== tag);
         }
     });
-    
+
     renderRosterManager();
     updateInclusionDrawer();
     showToast(`Condición '${tag}' eliminada globalmente.`, "success");
@@ -2469,7 +2469,7 @@ function renderConfigForm() {
     if ($.configAulaAge) {
         $.configAulaAge.value = state.config.aulaAge || "4_anios";
     }
-    
+
     // Add profile loaders
     if (state.currentUser) {
         $.configTeacherEmail.value = state.currentUser.email || "";
@@ -2532,7 +2532,7 @@ function handleConfigSave(e) {
         updateInclusionDrawer();
         renderSituationSuggestions();
     }
-    
+
     if (state.currentUser) {
         state.currentUser.name = state.config.teacherTitle;
         state.currentUser.email = $.configTeacherEmail.value.trim();
@@ -2544,7 +2544,7 @@ function handleConfigSave(e) {
             $.sidebarAvatar.textContent = state.currentUser.name.charAt(0).toUpperCase() || "M";
         }
     }
-    
+
     saveCurrentUserSession();
     showToast("Perfil y datos del aula guardados correctamente.", "success");
     switchView("planificador");
@@ -2589,7 +2589,7 @@ function generateFormattedDocument() {
     const compNames = compKeys.map(k => areaObj?.competencies[k]?.name || k).filter(Boolean);
     const competenceName = compNames.length > 0 ? "• " + compNames.join("<br>• ") : "No especificada";
     const capacities = state.session.selectedCapacities;
-    
+
     let transversalsHtml = "";
     for (const key in state.session.transversals) {
         const trans = state.session.transversals[key];
@@ -2699,8 +2699,8 @@ function generateFormattedDocument() {
                 <tr>
                     <td><strong>${st.name}</strong></td>
                     ${capacities.map(c => {
-                        const grade = getStudentGrade(st.id, c);
-                        return `
+                const grade = getStudentGrade(st.id, c);
+                return `
                             <td>
                                 <select class="criteria-select ${grade.toLowerCase()}" data-student-id="${st.id}" data-capacity="${c}">
                                     <option value="Logrado" ${grade === 'Logrado' ? 'selected' : ''}>A - Logrado</option>
@@ -2710,7 +2710,7 @@ function generateFormattedDocument() {
                                 <span class="print-grade-text" style="font-weight:bold; color: ${grade === 'Logrado' ? '#27AE60' : grade === 'Proceso' ? '#2980B9' : '#C0392B'}">${grade}</span>
                             </td>
                         `;
-                    }).join("")}
+            }).join("")}
                 </tr>
             `;
         });
@@ -2812,7 +2812,7 @@ function updatePrintOrientation(isLandscape) {
         printStyle.id = "dynamic-print-style";
         document.head.appendChild(printStyle);
     }
-    
+
     if (isLandscape) {
         printStyle.innerHTML = `
             @media print {
@@ -2854,12 +2854,12 @@ function renderStep4Document() {
     if (!$.step4DocumentContainer) return;
     const docHtml = generateFormattedDocument();
     $.step4DocumentContainer.innerHTML = docHtml;
-    
+
     // Auto-determine orientation based on capabilities count
     const capacities = state.session.selectedCapacities || [];
     const isLandscape = capacities.length > 4;
     updatePrintOrientation(isLandscape);
-    
+
     // Bind change listener on criteria selects to make them interactive inline
     const criteriaSelects = $.step4DocumentContainer.querySelectorAll(".criteria-select");
     criteriaSelects.forEach(select => {
@@ -2869,14 +2869,14 @@ function renderStep4Document() {
             const newGrade = e.target.value;
             setStudentGrade(sId, capText, newGrade);
             select.className = `criteria-select ${newGrade.toLowerCase()}`;
-            
+
             // Sync status badge / text element next to it
             const spanText = select.nextElementSibling;
             if (spanText && spanText.classList.contains("print-grade-text")) {
                 spanText.textContent = newGrade;
                 spanText.style.color = newGrade === 'Logrado' ? '#27AE60' : newGrade === 'Proceso' ? '#2980B9' : '#C0392B';
             }
-            
+
             // Sync formatting stats
             updateEvaluationStats();
         });
@@ -2906,7 +2906,7 @@ Situación Significativa: "${state.significantSituation}"
 Competencia: ${CURRICULUM_DATA[state.session.selectedArea]?.competencies[state.session.selectedCompetence]?.name}
 Capacidades: ${state.session.selectedCapacities.join(", ")}
     `;
-    
+
     navigator.clipboard.writeText(textPlan.trim()).then(() => {
         showToast("¡Planificación copiada al portapapeles!", "success");
     }).catch(err => {
@@ -2917,7 +2917,7 @@ Capacidades: ${state.session.selectedCapacities.join(", ")}
 // Toast
 function showToast(message, type = "success") {
     $.toastText.textContent = message;
-    
+
     if (type === "success") {
         $.toast.style.backgroundColor = "#2D6A4F";
     } else if (type === "warning") {
@@ -2925,9 +2925,9 @@ function showToast(message, type = "success") {
     } else {
         $.toast.style.backgroundColor = "#C0392B";
     }
-    
+
     $.toast.classList.add("show");
-    
+
     setTimeout(() => {
         $.toast.classList.remove("show");
     }, 3500);
@@ -2939,13 +2939,13 @@ function saveActivePlanToHistory(silent = false) {
         if (!silent) showToast("Planificación incompleta. Selecciona Área y Competencia.", "warning");
         return;
     }
-    
+
     if (!state.savedPlans) {
         state.savedPlans = [];
     }
-    
+
     const existingIndex = state.savedPlans.findIndex(p => p.situation === state.significantSituation && p.area === state.session.selectedArea);
-    
+
     const planObj = {
         id: existingIndex >= 0 ? state.savedPlans[existingIndex].id : "plan_" + Date.now(),
         timestamp: new Date().toLocaleString(),
@@ -2961,15 +2961,15 @@ function saveActivePlanToHistory(silent = false) {
         didacticSteps: JSON.parse(JSON.stringify(state.session.didacticSteps)),
         transversals: JSON.parse(JSON.stringify(state.session.transversals || {}))
     };
-    
+
     if (existingIndex >= 0) {
         state.savedPlans[existingIndex] = planObj;
     } else {
         state.savedPlans.push(planObj);
     }
-    
+
     saveCurrentUserSession();
-    
+
     if (!silent) {
         showToast("¡Planificación guardada en tu historial!", "success");
     }
@@ -2986,12 +2986,12 @@ function loadSavedPlan(plan) {
     state.routinesChecked = plan.routinesChecked;
     state.session.didacticSteps = plan.didacticSteps;
     state.session.transversals = plan.transversals;
-    
+
     // Sync UI components
     $.situationTextarea.value = plan.situation;
     $.areaSelect.value = plan.area;
     handleAreaChange();
-    
+
     // Check corresponding competence checkboxes
     const compKeys = (plan.competence || "").split(",");
     compKeys.forEach(k => {
@@ -2999,7 +2999,7 @@ function loadSavedPlan(plan) {
         if (cb) cb.checked = true;
     });
     handleCompetenciesToggle(); // updates capacities lists
-    
+
     // Check capacities checkboxes
     plan.capacities.forEach(c => {
         const cb = document.querySelector(`#capacities-container input[data-capacity="${c}"]`);
@@ -3008,7 +3008,7 @@ function loadSavedPlan(plan) {
             cb.closest(".capacity-checkbox-item").classList.add("checked");
         }
     });
-    
+
     // Update active Step age highlights
     $.ageCards.forEach(c => {
         const cardAge = c.getAttribute("data-age");
@@ -3018,10 +3018,10 @@ function loadSavedPlan(plan) {
             c.classList.remove("active");
         }
     });
-    
+
     renderFreePlayMoment();
     renderDidacticSteps();
-    
+
     // Open the export modal directly
     openExportModal();
     showToast("Planificación cargada con éxito.", "success");
@@ -3031,7 +3031,7 @@ function renderPlansHistory() {
     const container = document.getElementById("history-grid-container");
     if (!container) return;
     container.innerHTML = "";
-    
+
     if (!state.savedPlans || state.savedPlans.length === 0) {
         container.style.display = "flex";
         container.style.flexDirection = "column";
@@ -3039,7 +3039,7 @@ function renderPlansHistory() {
         container.style.justifyContent = "center";
         container.style.padding = "4rem 2rem";
         container.style.gridColumn = "1 / -1";
-        
+
         container.innerHTML = `
             <div style="background-color: var(--primary-light); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
                 <i data-lucide="archive-x" class="color-primary" style="width: 40px; height: 40px;"></i>
@@ -3053,27 +3053,27 @@ function renderPlansHistory() {
                 <span>Crear Nueva Planificación</span>
             </button>
         `;
-        
+
         const startBtn = document.getElementById("btn-history-start-planning");
         if (startBtn) {
             startBtn.addEventListener("click", () => {
                 switchView("planificador");
             });
         }
-        
+
         if (typeof lucide !== "undefined") { lucide.createIcons(); }
         return;
     }
-    
+
     container.style.display = "grid";
-    
+
     state.savedPlans.forEach(plan => {
         const areaName = CURRICULUM_DATA[plan.area]?.name || "Área General";
         const ageText = plan.age === "3_anios" ? "3 Años" : plan.age === "4_anios" ? "4 Años" : "5 Años";
-        
+
         const card = document.createElement("div");
         card.className = "history-card";
-        
+
         card.innerHTML = `
             <div class="history-card-header">
                 <span class="history-card-badge">${ageText}</span>
@@ -3104,20 +3104,20 @@ function renderPlansHistory() {
                 </button>
             </div>
         `;
-        
+
         card.querySelector(".btn-history-open").addEventListener("click", () => {
             loadSavedPlan(plan);
         });
-        
+
         card.querySelector(".btn-history-delete").addEventListener("click", () => {
             if (confirm("¿Estás seguro de que deseas eliminar esta planificación de tu historial?")) {
                 deleteSavedPlan(plan.id);
             }
         });
-        
+
         container.appendChild(card);
     });
-    
+
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
 
@@ -3283,7 +3283,7 @@ function renderSituationSuggestions() {
     const container = document.getElementById("situation-suggestions-container");
     if (!container) return;
     container.innerHTML = "";
-    
+
     // Render dynamic motivational quote to fill left panel empty space
     const quoteEl = document.getElementById("dynamic-motivational-quote");
     if (quoteEl) {
@@ -3298,10 +3298,10 @@ function renderSituationSuggestions() {
         const randomQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
         quoteEl.textContent = randomQuote;
     }
-    
+
     const ageKey = state.selectedAge || "4_anios";
     const suggestions = AULA_SITUATION_SUGGESTIONS[ageKey] || AULA_SITUATION_SUGGESTIONS["4_anios"];
-    
+
     suggestions.forEach(item => {
         const itemEl = document.createElement("div");
         itemEl.className = "suggestion-card-premium";
@@ -3318,7 +3318,7 @@ function renderSituationSuggestions() {
             align-items: start;
             box-shadow: var(--shadow-soft);
         `;
-        
+
         itemEl.innerHTML = `
             <div style="background-color: var(--primary-light); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; border: 1px solid var(--border-color);">
                 ${item.icon}
@@ -3334,24 +3334,24 @@ function renderSituationSuggestions() {
                 <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.5; margin: 0;">${item.desc}</p>
             </div>
         `;
-        
+
         itemEl.addEventListener("click", () => {
             const clickIndex = parseInt(itemEl.dataset.clickIndex);
             const totalVariants = item.values.length;
             const activeValue = item.values[clickIndex % totalVariants];
-            
+
             $.situationTextarea.value = activeValue;
             state.significantSituation = activeValue;
-            
+
             // Advance variant index
             const nextIndex = clickIndex + 1;
             itemEl.dataset.clickIndex = nextIndex.toString();
-            
+
             // Automation: auto-select area and competence based on activeValue content
             let targetArea = "";
             let targetComp = "";
             const text = activeValue.toLowerCase();
-            
+
             if (text.includes("animales") || text.includes("fauna") || text.includes("insectos")) {
                 targetArea = "ciencia_tecnologia";
                 targetComp = "indaga_metodos";
@@ -3389,26 +3389,26 @@ function renderSituationSuggestions() {
                 targetArea = "ciencia_tecnologia";
                 targetComp = "indaga_metodos";
             }
-            
+
             if (targetArea && targetComp) {
                 $.areaSelect.value = targetArea;
                 handleAreaChange();
-                
+
                 const cb = document.querySelector(`#competencies-checkbox-container input[value='${targetComp}']`);
                 if (cb) {
                     cb.checked = true;
                 }
                 handleCompetenciesToggle();
-                
+
                 showToast(`Kuska IA: Planificación sugerida y curricular automatizada (Idea ${(clickIndex % totalVariants) + 1})`, "success");
             } else {
                 showToast(`Sugerencia aplicada (Idea ${(clickIndex % totalVariants) + 1}).`, "success");
             }
         });
-        
+
         container.appendChild(itemEl);
     });
-    
+
     // Add hover styles dynamically
     const cards = container.querySelectorAll(".suggestion-card-premium");
     cards.forEach(c => {
@@ -3423,6 +3423,6 @@ function renderSituationSuggestions() {
             c.style.boxShadow = "var(--shadow-soft)";
         });
     });
-    
+
     if (typeof lucide !== "undefined") { lucide.createIcons(); }
 }
