@@ -1,7 +1,7 @@
 // Main Application Logic & UI Bindings for Kuska Plan
 // Configuración de Supabase (opcional - si se completan, el sistema se conecta a la base de datos de producción)
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://bsrnpneeuqhytzufwmpd.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_wyfJ1cjUJTHjiaHpf9vXKg_HPd1OjiT";
 
 let supabaseClient = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window.supabase !== "undefined") {
