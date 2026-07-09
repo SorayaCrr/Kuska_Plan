@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://bsrnpneeuqhytzufwmpd.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_wyfJ1cjUJTHjiaHpf9vXKg_HPd1OjiT";
 
 // Configuración de Groq (si colocas aquí tu API Key de Groq, se activará de forma predeterminada para el aula)
-const DEFAULT_GROQ_API_KEY = "";
+const DEFAULT_GROQ_API_KEY = "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";
 
 let supabaseClient = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window.supabase !== "undefined") {
@@ -3529,7 +3529,7 @@ function renderSituationSuggestions() {
 
 // --- GROQ API INTEGRATION DRIVER ---
 async function callGroqAPI(systemPrompt, userPrompt) {
-    const apiKey = state.config.groqApiKey || DEFAULT_GROQ_API_KEY || "";
+    const apiKey = DEFAULT_GROQ_API_KEY || state.config.groqApiKey || "";
     if (!apiKey) {
         throw new Error("API_KEY_MISSING");
     }
