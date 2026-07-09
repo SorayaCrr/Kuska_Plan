@@ -1,0 +1,7 @@
+/* Kuska Plan Main Stylesheet Aggregator */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('variables.css?v=2.0');
+@import url('auth.css?v=2.2');
+@import url('sidebar.css?v=2.0');
+@import url('dashboard.css?v=2.0');
+@import url('print.css?v=2.0');

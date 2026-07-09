@@ -1,0 +1,201 @@
+/* A4 Print Layout Stylesheet */
+@media print {
+    /* Reset body and parent layout wrappers to avoid page scroll-clipping */
+    html, body {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background-color: #ffffff !important;
+    }
+
+    .dashboard-container,
+    .main-content, 
+    .view-panel, 
+    .wizard-panel, 
+    .a4-document-card-wrapper {
+        display: block !important;
+        width: 100% !important;
+        grid-template-columns: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: none !important;
+    }
+
+    /* Hide non-print containers from layout flow entirely to avoid empty spaces */
+    .sidebar-dashboard,
+    .header-dashboard,
+    .step-indicators,
+    .plan-actions-footer,
+    #panel-planificador > div:first-child, /* standard top banner */
+    #step-4-content > *:not(.a4-document-card-wrapper), /* step 4 header and footer buttons */
+    footer {
+        display: none !important;
+    }
+
+    /* Hide everything by default */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Show only the A4 printable sheets */
+    .a4-sheet, .a4-sheet *, 
+    .modal-body .preview-document, .modal-body .preview-document * {
+        visibility: visible !important;
+    }
+
+    /* Target sheet and modal preview positioning for static natural flow */
+    .a4-sheet, .modal-body .preview-document {
+        position: relative !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+        overflow: visible !important;
+    }
+
+    /* Print-specific layout styling */
+    body {
+        color: #111111 !important;
+        font-size: 10pt !important;
+        font-family: 'Outfit', sans-serif !important;
+        line-height: 1.4 !important;
+    }
+
+    /* Hide selector dropdown elements in table, and show the clean text spans */
+    .criteria-select {
+        display: none !important;
+    }
+
+    .print-grade-text {
+        display: inline !important;
+        font-weight: bold;
+    }
+
+    /* Expand modal contents to cover full printable page */
+    .modal-overlay {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        background: none !important;
+        backdrop-filter: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+        z-index: auto !important;
+    }
+
+    .modal-card {
+        box-shadow: none !important;
+        max-height: none !important;
+        width: 100% !important;
+        border: none !important;
+        background: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .modal-body {
+        padding: 0 !important;
+        background: none !important;
+        overflow-y: visible !important;
+    }
+
+    .preview-document {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        background: var(--white) !important;
+    }
+
+    /* Printable Table rules */
+    .doc-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-top: 10px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .doc-table th, .doc-table td {
+        border: 1px solid #333333 !important;
+        padding: 6px 10px !important;
+        font-size: 9.5pt !important;
+        color: #111111 !important;
+        background: none !important;
+    }
+
+    .doc-table th {
+        background-color: #F0F4F8 !important;
+        font-weight: 700 !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doc-metadata-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        background-color: #F8FAFC !important;
+        border: 1px solid #333333 !important;
+        padding: 10px !important;
+        margin-bottom: 20px !important;
+        font-size: 10pt !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .doc-section-title {
+        font-size: 11pt !important;
+        font-weight: bold !important;
+        color: #000000 !important;
+        border-left: 4px solid #5A3D7C !important;
+        padding-left: 8px !important;
+        margin-top: 20px !important;
+        margin-bottom: 8px !important;
+        text-transform: uppercase !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Page Breaks control to avoid cutoff text */
+    h1, h2, h3, h4, h5, h6, .doc-section-title {
+        page-break-after: avoid;
+    }
+
+    .doc-table, tr, p, ul, .doc-metadata-grid {
+        page-break-inside: avoid;
+    }
+
+    .doc-header {
+        border-bottom: 2px solid #000000 !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 20px !important;
+    }
+
+    .doc-title {
+        font-size: 16pt !important;
+        color: #000000 !important;
+    }
+
+    /* Signature lines at footer */
+    .preview-document > div:last-child {
+        page-break-inside: avoid !important;
+        margin-top: 3cm !important;
+    }
+}
