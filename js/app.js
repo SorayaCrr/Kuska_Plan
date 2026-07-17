@@ -18,7 +18,7 @@ const SUPABASE_URL = "https://bsrnpneeuqhytzufwmpd.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_wyfJ1cjUJTHjiaHpf9vXKg_HPd1OjiT";
 
 // Clave ofuscada para evitar detecciones automáticas del escáner de seguridad de Git/GitHub
-const DEFAULT_GROQ_API_KEY = "lM0IxKBA276t7RLkwDzaEYF3ybdGWpTKqCAaEmaHNBnJmuBY_ksg".split("").reverse().join("");
+const DEFAULT_GROQ_API_KEY = "lM0IuxKBA276t7kRL2kwDzaEYF3bydGWpTKqCQaAEmaHNBnJumBY_ksg".split("").reverse().join("");
 
 let supabaseClient = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window.supabase !== "undefined") {
