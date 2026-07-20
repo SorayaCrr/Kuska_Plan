@@ -1,6 +1,6 @@
 # Kuska Plan - Planificación Interactiva para Educación Inicial
 
-**Kuska Plan** es una plataforma web interactiva diseñada exclusivamente para docentes de Educación Inicial (Ciclo II - de 3 a 5 años). El objetivo principal de la plataforma es simplificar y potenciar la planificación curricular diaria, integrando de forma directa el Currículo Nacional y permitiendo la adaptación pedagógica para estudiantes con Necesidades Educativas Especiales (NEE) mediante Inteligencia Artificial.
+**Kuska Plan** es una plataforma web interactiva diseñada exclusivamente para docentes de Educación Inicial (3 a 5 años). El objetivo principal de la plataforma es simplificar y potenciar la planificación curricular diaria, integrando de forma directa el Currículo Nacional y permitiendo la adaptación pedagógica para estudiantes con Necesidades Educativas Especiales (NEE) mediante Inteligencia Artificial.
 
 ---
 

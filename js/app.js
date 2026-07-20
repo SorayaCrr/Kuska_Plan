@@ -17,8 +17,8 @@ window.addEventListener("error", (e) => {
 const SUPABASE_URL = "https://bsrnpneeuqhytzufwmpd.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_wyfJ1cjUJTHjiaHpf9vXKg_HPd1OjiT";
 
-// Clave ofuscada para evitar detecciones automáticas del escáner de seguridad de Git/GitHub
-const DEFAULT_GROQ_API_KEY = "lM0IuxKBA276t7kRL2kwDzaEYF3bydGWpTKqCQaAEmaHNBnJumBY_ksg".split("").reverse().join("");
+// Clave ofuscada eliminada por seguridad. Debe configurarse desde la interfaz de la aplicación o variables de entorno.
+const DEFAULT_GROQ_API_KEY = "";
 
 let supabaseClient = null;
 if (SUPABASE_URL && SUPABASE_ANON_KEY && typeof window.supabase !== "undefined") {
@@ -3582,34 +3582,61 @@ function renderSituationSuggestions() {
 
 // --- GROQ API INTEGRATION DRIVER ---
 async function callGroqAPI(systemPrompt, userPrompt) {
-    const apiKey = DEFAULT_GROQ_API_KEY || state.config.groqApiKey || "";
-    if (!apiKey) {
+    // 1. Si el usuario ingresó su propia clave en la configuración, la usamos directamente (útil para pruebas locales)
+    const localApiKey = (state.config && state.config.groqApiKey) || "";
+    if (localApiKey) {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localApiKey}`
+            },
+            body: JSON.stringify({
+                model: "llama-3.3-70b-versatile",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.6
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.choices[0].message.content.trim();
+    }
+
+    // 2. Si no hay clave local, llamamos a la función Serverless intermediaria en Vercel/Netlify
+    try {
+        const response = await fetch("/api/groq", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ systemPrompt, userPrompt })
+        });
+        
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.choices && data.choices[0] && data.choices[0].message) {
+            return data.choices[0].message.content.trim();
+        } else if (data.content) {
+            return data.content.trim();
+        } else {
+            throw new Error("Formato de respuesta desconocido");
+        }
+    } catch (err) {
+        console.warn("Fallo al llamar a la función serverless:", err);
         throw new Error("API_KEY_MISSING");
     }
-    
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: userPrompt }
-            ],
-            temperature: 0.6
-        })
-    });
-    
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data.choices[0].message.content.trim();
 }
 
 async function generateEvaluationReportWithGroq() {
