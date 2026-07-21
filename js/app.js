@@ -146,8 +146,6 @@ function initDOMCache() {
         configIeName: document.getElementById("config-ie-name"),
         configAulaName: document.getElementById("config-aula-name"),
         configTeacherTitle: document.getElementById("config-teacher-title"),
-        configGroqKey: document.getElementById("config-groq-key"),
-        configServerlessUrl: document.getElementById("config-serverless-url"),
         btnGenerateAiReport: document.getElementById("btn-generate-ai-report"),
         configTeacherEmail: document.getElementById("config-teacher-email"),
         configTeacherPassword: document.getElementById("config-teacher-password"),
@@ -2595,12 +2593,7 @@ function renderConfigForm() {
     $.configAulaName.value = state.config.aulaName || "";
     $.configTeacherTitle.value = state.config.teacherTitle || "";
     $.configSchoolYear.value = state.config.schoolYear || "";
-    if ($.configGroqKey) {
-        $.configGroqKey.value = state.config.groqApiKey || "";
-    }
-    if ($.configServerlessUrl) {
-        $.configServerlessUrl.value = state.config.serverlessUrl || "";
-    }
+
     if ($.configAulaAge) {
         $.configAulaAge.value = state.config.aulaAge || "4_anios";
     }
@@ -2661,12 +2654,7 @@ function handleConfigSave(e) {
     state.config.aulaName = $.configAulaName.value.trim();
     state.config.teacherTitle = $.configTeacherTitle.value.trim();
     state.config.schoolYear = $.configSchoolYear.value.trim();
-    if ($.configGroqKey) {
-        state.config.groqApiKey = $.configGroqKey.value.trim();
-    }
-    if ($.configServerlessUrl) {
-        state.config.serverlessUrl = $.configServerlessUrl.value.trim();
-    }
+
     if ($.configAulaAge) {
         state.config.aulaAge = $.configAulaAge.value;
         state.selectedAge = state.config.aulaAge;
@@ -3589,37 +3577,19 @@ function renderSituationSuggestions() {
 
 // --- GROQ API INTEGRATION DRIVER ---
 async function callGroqAPI(systemPrompt, userPrompt) {
-    // 1. Si el usuario ingresó su propia clave en la configuración, la usamos directamente (útil para pruebas locales)
-    const localApiKey = (state.config && state.config.groqApiKey) || "";
-    if (localApiKey) {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localApiKey}`
-            },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: userPrompt }
-                ],
-                temperature: 0.6
-            })
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error?.message || `HTTP ${response.status}`);
-        }
-        
-        const data = await response.json();
-        return data.choices[0].message.content.trim();
-    }
+    // 1. Detectar si estamos en un entorno local (localhost, 127.0.0.1 o protocolo file://)
+    const isLocal = window.location.hostname === "localhost" || 
+                    window.location.hostname === "127.0.0.1" || 
+                    window.location.protocol === "file:";
 
-    // 2. Si no hay clave local, llamamos a la función Serverless intermediaria en Vercel/Netlify
+    // Si estamos en local, llamamos a la URL absoluta del despliegue en Vercel.
+    // Si estamos en producción en Vercel, usamos la ruta relativa del mismo dominio.
+    const proxyUrl = isLocal 
+        ? "https://kuska-plan.vercel.app/api/groq" 
+        : "/api/groq";
+
     try {
-        const response = await fetch("/api/groq", {
+        const response = await fetch(proxyUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -3629,7 +3599,9 @@ async function callGroqAPI(systemPrompt, userPrompt) {
         
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || `HTTP ${response.status}`);
+            // Si el error de Groq viene con un objeto error detallado, lo extraemos
+            const errorMsg = errData.error?.message || errData.error || `HTTP ${response.status}`;
+            throw new Error(errorMsg);
         }
         
         const data = await response.json();
@@ -3641,8 +3613,8 @@ async function callGroqAPI(systemPrompt, userPrompt) {
             throw new Error("Formato de respuesta desconocido");
         }
     } catch (err) {
-        console.warn("Fallo al llamar a la función serverless:", err);
-        throw new Error("API_KEY_MISSING");
+        console.error("Fallo al llamar a la IA de Groq:", err);
+        throw new Error(err.message || "Error de comunicación con la IA");
     }
 }
 
