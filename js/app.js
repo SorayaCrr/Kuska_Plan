@@ -147,6 +147,7 @@ function initDOMCache() {
         configAulaName: document.getElementById("config-aula-name"),
         configTeacherTitle: document.getElementById("config-teacher-title"),
         configGroqKey: document.getElementById("config-groq-key"),
+        configServerlessUrl: document.getElementById("config-serverless-url"),
         btnGenerateAiReport: document.getElementById("btn-generate-ai-report"),
         configTeacherEmail: document.getElementById("config-teacher-email"),
         configTeacherPassword: document.getElementById("config-teacher-password"),
@@ -1722,7 +1723,7 @@ Capacidades seleccionadas: ${state.session.selectedCapacities.join(", ")}`;
             showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
         } else {
             console.error(err);
-            showToast("Error de conexión. Usando plantilla local...", "error");
+            showToast(`Error: ${err.message || 'Error de conexión'}. Usando plantilla local...`, "error");
             // Local Fallback
             const aiData = AI_GENERATOR_DATABASE[area] || AI_GENERATOR_DATABASE["personal_social"];
             state.session.didacticSteps.forEach((step, idx) => {
@@ -2323,7 +2324,7 @@ Tema de adaptación: ${cleanedTheme}`;
             showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
         } else {
             console.error(err);
-            showToast("Error de conexión. Usando adaptación básica local...", "error");
+            showToast(`Error: ${err.message || 'Error de conexión'}. Usando adaptación básica local...`, "error");
         }
         // Fallback
         const thematicIdea = {
@@ -2388,7 +2389,7 @@ No incluyas explicaciones adicionales, devuelve solo el JSON puro.`;
             showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
         } else {
             console.error(err);
-            showToast("Error de conexión. Cargando propuesta predeterminada...", "error");
+            showToast(`Error: ${err.message || 'Error de conexión'}. Cargando propuesta predeterminada...`, "error");
         }
         // Fallback
         const areaMapping = {
@@ -2597,6 +2598,9 @@ function renderConfigForm() {
     if ($.configGroqKey) {
         $.configGroqKey.value = state.config.groqApiKey || "";
     }
+    if ($.configServerlessUrl) {
+        $.configServerlessUrl.value = state.config.serverlessUrl || "";
+    }
     if ($.configAulaAge) {
         $.configAulaAge.value = state.config.aulaAge || "4_anios";
     }
@@ -2659,6 +2663,9 @@ function handleConfigSave(e) {
     state.config.schoolYear = $.configSchoolYear.value.trim();
     if ($.configGroqKey) {
         state.config.groqApiKey = $.configGroqKey.value.trim();
+    }
+    if ($.configServerlessUrl) {
+        state.config.serverlessUrl = $.configServerlessUrl.value.trim();
     }
     if ($.configAulaAge) {
         state.config.aulaAge = $.configAulaAge.value;
@@ -3711,7 +3718,7 @@ ${rosterText}`;
             showToast("Por favor, ingresa tu Groq API Key en la pestaña Configuración.", "warning");
         } else {
             console.error(err);
-            showToast("Error de comunicación con la IA de Groq.", "error");
+            showToast(`Error: ${err.message || 'Error de comunicación con la IA de Groq'}.`, "error");
         }
     } finally {
         btn.disabled = false;
