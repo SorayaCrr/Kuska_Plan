@@ -393,13 +393,13 @@ const AUTOMATION_TEMPLATES = {
 function getAutomaticPlan(age, area, competence) {
     const ageKey = age || "4_anios";
     const areaKey = area || "personal_social";
-    
+
     // Resolve templates
     const ageTemplates = AUTOMATION_TEMPLATES[ageKey];
-    let template = ageTemplates && ageTemplates[areaKey] 
-        ? ageTemplates[areaKey] 
+    let template = ageTemplates && ageTemplates[areaKey]
+        ? ageTemplates[areaKey]
         : AUTOMATION_TEMPLATES["4_anios"]["personal_social"]; // fallback
-        
+
     // Build pre-filled didactic steps based on Area and Competence rules
     let didacticSteps = [];
     if (areaKey === "psicomotriz") {
@@ -503,8 +503,8 @@ function getAutomaticPlan(age, area, competence) {
     }));
 
     // Formulate creative session title
-    const sessionTitle = template.situation.includes(":") 
-        ? template.situation.split(":")[0].trim() 
+    const sessionTitle = template.situation.includes(":")
+        ? template.situation.split(":")[0].trim()
         : "Sesión de Aprendizaje";
 
     // Map concrete suggested materials based on areaKey

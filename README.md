@@ -1,6 +1,6 @@
 # Kuska Plan - Planificación Interactiva para Educación Inicial
 
-**Kuska Plan** es una plataforma web interactiva diseñada exclusivamente para docentes de Educación Inicial (3 a 5 años). El objetivo principal de la plataforma es simplificar y potenciar la planificación curricular diaria, integrando de forma directa el Currículo Nacional y permitiendo la adaptación pedagógica para estudiantes con Necesidades Educativas Especiales (NEE) mediante Inteligencia Artificial.
+**Kuska Plan** es una plataforma web interactiva diseñada exclusivamente para docentes de Educación Inicial (3 a 5 años). El objetivo principal de la plataforma es simplificar y potenciar la planificación curricular diaria, integrando de forma directa el Currículo Nacional de Educación Inicial de Perú y permitiendo la adaptación pedagógica para estudiantes con Necesidades Educativas Especiales (NEE) mediante Inteligencia Artificial.
 
 ---
 
@@ -21,7 +21,7 @@
 
 4. **Gestión de Alumnos y NEE:**
    - Registro de estudiantes del aula.
-   - Asignación de tags/etiquetas de Necesidades Educativas Especiales (TDAH, Hipersensibilidad, Discapacidad Motriz, etc.) para personalizar las recomendaciones.
+   - Asignación de etiquetas de Necesidades Educativas Especiales (TDAH, Hipersensibilidad, Discapacidad Motriz, etc.) para personalizar las recomendaciones curriculares y de actividades.
 
 5. **Control de Logros (Rúbricas):**
    - Cuadro interactivo de evaluación para calificar el nivel de logro de cada estudiante por capacidad (Logrado [A/AD], Proceso [B], Inicio [C]).
@@ -45,9 +45,12 @@
   - **JavaScript (Vanilla):** Lógica del lado del cliente modular y reactiva.
   - **Lucide Icons:** Iconografía moderna de alta fidelidad.
 
+- **Backend & Serverless:**
+  - **Vercel Serverless Functions (Node.js):** Proxy seguro (`api/groq.js`) para interactuar con la API de Groq sin exponer credenciales en el cliente.
+
 - **Servicios e Integraciones:**
   - **Supabase (PostgreSQL, Auth & Database):** Persistencia de perfiles, estudiantes, rúbricas de evaluación y fichas de planificación de forma remota, sincronizados por usuario.
-  - **Groq API (Llama-3.3-70b):** Motor de inteligencia artificial ultrarrápido para asistencia pedagógica.
+  - **Groq API (Llama-3.3-70b-versatile):** Motor de inteligencia artificial ultrarrápido para asistencia pedagógica.
 
 ---
 
@@ -55,6 +58,8 @@
 
 ```bash
 PlanerGo/
+├── api/
+│   └── groq.js           # Serverless Function (Vercel) para actuar como proxy de Groq
 ├── css/
 │   ├── auth.css          # Estilos de la pantalla de login/registro
 │   ├── dashboard.css     # Estilos generales del workspace principal
@@ -91,23 +96,23 @@ El proyecto cuenta con 4 tablas principales en Supabase sincronizadas bajo polí
 
 ## ⚙️ Configuración y Despliegue
 
-### Requisitos y Alojamiento Estático
-Al ser una aplicación web de cliente puro (HTML/CSS/JS estático), **Kuska Plan** no requiere un servidor backend dinámico, base de datos local ni procesos de compilación o dependencias pesadas de Node.js. 
+### Requisitos de Configuración
+Para habilitar todas las funcionalidades de la aplicación, es necesario configurar los siguientes servicios:
 
-Esto permite que pueda ser desplegada de forma instantánea y gratuita en cualquier plataforma de alojamiento estático en la nube, tales como:
-- **GitHub Pages**
-- **Vercel**
-- **Netlify**
-- **Cloudflare Pages**
+1. **Supabase (Base de Datos y Autenticación):**
+   - Configura las credenciales `SUPABASE_URL` y `SUPABASE_ANON_KEY` en el archivo [js/app.js](file:///c:/Users/Dell/Downloads/Kuska_Plan/PlanerGo/js/app.js).
+   - Asegúrate de inicializar las tablas de la base de datos ejecutando el script [supabase_schema.sql](file:///c:/Users/Dell/Downloads/Kuska_Plan/PlanerGo/supabase_schema.sql) en tu proyecto.
 
-Solo basta subir el repositorio y la página estará lista para su uso en producción.
+2. **Groq API (Inteligencia Artificial):**
+   - La aplicación utiliza una función serverless como proxy (`api/groq.js`) para interactuar con la API de Groq de forma segura.
+   - Define tu API key en la variable de entorno `GROQ_API_KEY` en tu plataforma de hosting.
 
-### Configuración de Claves y Lógica Interna
-La conexión a los servicios de terceros se maneja de forma centralizada en los archivos JavaScript del proyecto:
-- **Supabase (Base de Datos y Autenticación):** El cliente se autoconfigura editando las constantes globales `SUPABASE_URL` y `SUPABASE_ANON_KEY` ubicadas al inicio del archivo [`js/app.js`](file:///c:/Users/Dell/Downloads/Kuska_Plan/PlanerGo/js/app.js).
-- **Groq API Key (Inteligencia Artificial):** La clave global de la Inteligencia Artificial de Groq se encuentra integrada y ofuscada en la lógica interna de [`js/app.js`](file:///c:/Users/Dell/Downloads/Kuska_Plan/PlanerGo/js/app.js). Esto permite habilitar el uso inmediato de la IA para todas las docentes de manera transparente y sin necesidad de configuraciones individuales.
+### Despliegue y Desarrollo
+* **Producción:** Se recomienda desplegar en **Vercel**, ya que detecta automáticamente la estructura del proyecto y aprovisiona tanto el frontend como la serverless function de la API de forma nativa.
+* **Desarrollo Local:** Puedes correr el frontend con cualquier servidor local estático, o ejecutar `vercel dev` si deseas probar cambios en la función serverless localmente.
 
 ---
 
 ## 🎨 Personalización y Temas
-La interfaz cuenta con opciones para alternar el acento cromático entre **Verde Menta** y **Lavanda**, además de soporte nativo para **Versión Nocturna (Tema Oscuro)** de alto contraste para disminuir la fatiga visual durante planificaciones nocturnas.
+La interfaz cuenta con opciones para alternar el acento cromático entre **Verde Menta** y **Lavanda**, además de soporte nativo para **Versión Nocturna (Tema Oscuro)** de alto contraste para disminuir la fatiga visual durante las horas de planificación docente.
+
